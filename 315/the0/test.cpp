@@ -44,7 +44,6 @@ void simpleTest(int *arr, int size, int expected_comparison, int expected_swap){
 	cout << "-----------------------\n";
 }
 
-
 void testCase0(){
 	int expected_comparison{5};
 	int expected_swap{2};
@@ -125,5 +124,4 @@ int main()
 	test();
 	return 0;
 }
-	
 	
