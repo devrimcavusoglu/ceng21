@@ -1,5 +1,4 @@
 #include "the0.h"
-#include "iostream"
 
 /* == CONSTRAINTS ==
 * a maximum execution time of 1 minute

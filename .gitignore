@@ -31,5 +31,9 @@
 *.out
 *.app
 
-# MISC
+# IDE
 .idea/
+
+# Misc
+/cmake-build-debug/
+CMakeLists.txt
