@@ -1,5 +1,3 @@
-// https://www.hackerrank.com/challenges/box-it/problem
-
 #include "ostream"
 
 std::ostream& operator<<(std::ostream& out, Box& other);
