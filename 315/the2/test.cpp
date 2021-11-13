@@ -17,7 +17,7 @@ void randomFill(unsigned short*& arr, int size, unsigned short minval, unsigned 
 	arr = new unsigned short [size];
 	for (int i=0; i <size; i++)
 	{
-		arr[i] = minval + (random() % interval);
+		arr[i] = minval + (rand() % interval);
 	}
 }
 
@@ -63,8 +63,6 @@ void read_from_file(unsigned short*& arr, int& size)
 
 void test()
 {
-	
-	
 	clock_t begin, end;
 	double duration;
 	
@@ -97,13 +95,15 @@ void test()
 	
 	
 	
-	int size= 1 << 1;	                                    // for maximum see the "boundaries for test cases" part
+	int size= 1 << 3;	                                    // for maximum see the "boundaries for test cases" part
 	//unsigned short minval=0;
 	//unsigned short interval= (unsigned short)((1<<5)-1);   // unsigned short 65535 in maximum , you can try to minimize interval for data generation to make your code test more equality conditions
 	//unsigned short *arr;
 	unsigned short *arr;
-	//unsigned short temp[] = {2, 1, 14, 6, 3, 0, 99, 3};
-	unsigned short temp[] = {0, 3};
+	//unsigned short temp[] = {0, 3}; //OK
+	//unsigned short temp[] = {4, 3, 2, 1}; // h -> avg_dist is nan ?
+	//unsigned short temp[] = {18, 18, 18, 18}; // avg_dist is wrong & 3 -> comp wrong
+	unsigned short temp[] = {2, 1, 14, 6, 3, 0, 99, 3}; // avg_dist is wrong & 3 -> sorts wrong
 	arr = temp;	
 	/*
 	
@@ -186,7 +186,7 @@ void test()
 
 int main()
 {
-	srandom(time(0));
+	srand(time(0));
 	test();
 	return 0;
 }
