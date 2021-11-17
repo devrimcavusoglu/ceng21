@@ -49,47 +49,72 @@ private: // DO NOT CHANGE THIS PART.
 
 template<class T>
 LinkedList<T>::LinkedList() {
-    /* TODO */
+    head = NULL;
+    size = 0;
 }
 
 template<class T>
 LinkedList<T>::LinkedList(const LinkedList<T> &obj) {
-    /* TODO */
+    size = 0;
+    while (obj.head->next != NULL) {
+        T current = obj.head->data;
+        insertAtTheEnd(current);
+        obj = obj.head;
+        size++;
+   }
 }
 
 template<class T>
 LinkedList<T>::~LinkedList() {
-    /* TODO */
+    while (!isEmpty()){
+        T next_ptr = obj.head->next;
+        delete head;
+    }
 }
 
 template<class T>
 int LinkedList<T>::getSize() const {
-    /* TODO */
+    return size
 }
 
 template<class T>
 bool LinkedList<T>::isEmpty() const {
-    /* TODO */
+    return (size == 0) ? true : false;
 }
 
 template<class T>
 bool LinkedList<T>::contains(Node<T> *node) const {
-    /* TODO */
+    Node<T> *current = head;
+    while (current != NULL){
+        if (current->data == node->data){
+            return true;
+        }
+        current = current->next;
+    }
+    return false;
 }
 
 template<class T>
 Node<T> *LinkedList<T>::getFirstNode() const {
-    /* TODO */
+    return head;
 }
 
 template<class T>
 Node<T> *LinkedList<T>::getLastNode() const {
-    /* TODO */
+    while (head->next != NULL){
+        head = head->next;
+    }
+    return head;
 }
 
 template<class T>
 Node<T> *LinkedList<T>::getNode(const T &data) const {
-    /* TODO */
+    while (head->next != NULL){
+        if (head->data == data){
+            return head;
+        }
+    }
+    return nullptr;
 }
 
 template<class T>
