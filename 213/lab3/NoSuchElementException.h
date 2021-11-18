@@ -1,0 +1,8 @@
+#ifndef NOSUCHELEMENTEXCEPTION_H
+#define NOSUCHELEMENTEXCEPTION_H
+
+class NoSuchElementException {
+
+};
+
+#endif //NOSUCHELEMENTEXCEPTION_H
