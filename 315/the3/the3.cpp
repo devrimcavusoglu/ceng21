@@ -30,53 +30,66 @@ void abc(){
 }
 
 
-int get_index(char *s, int l){
+int get_index(std::string s, int s_len, int start_col, int end_col){
     int index = 0;
-    for (int i = 0; i<l; i++){
+    for (int i = end_col; i>=start_col; i--){
         int char_index = (unsigned char) s[i] - 64;
-        index += char_index * pow(C_MAX, i);
+        index += char_index * pow(C_MAX, end_col-i);
     }
     return index - 1;
 }
 
-int countingSort(std::string *arr, int n, int l, int start_col, int end_col, int &iter){
+int countingSort(std::string *arr, int n, int l, int start_col, int end_col, int &num_iter){
     int k = pow(C_MAX, l);
     int *counts = new int[k];
+    std::string *output = new std::string[n];
+
+    size_t s_len = arr[0].size();
 
     for (int i = 0; i<n; i++){
-        char s[l];
-        for (int j = 0; j<n; j--){
-            s[j] = arr[i][j];
-        }
-        int char_index = get_index(string);
+        int char_index = get_index(arr[i], s_len, start_col, end_col);
         counts[char_index] += 1;
+        num_iter++;
     }
 
-    int sum = 0;
-    for (int i = 0; i<C_MAX; i++){
-        int tmp = counts[i];
-        counts[i] = sum;
-        sum += tmp;
+    for (int i = 1; i<k; i++){
+        counts[i] = counts[i-1];
+        num_iter++;
     }
+
+    for (int i = n-1; i>=0; i--){
+        int j = get_index(arr[i], s_len, start_col, end_col);
+        std::cout << j << " " << counts[j] << "\n";
+        counts[j] -= 1;
+        output[counts[j]] = arr[i];
+        num_iter++;
+    }
+
+    std::cout << output[0] << "\n";
 
     for (int i = 0; i<n; i++){
-        int char_index = get_index(string);
+        arr[i] = output[i];
+        num_iter++;
     }
 
     delete []counts;
-    return arr;
+    delete []output;
+
+    return num_iter;
 }
 
 
 int radixSort(std::string arr[], bool ascending, int n, int l){
     int num_iter = 0;
+    int end_col, start_col;
+    std::string *ptr_arr = arr;
 
     size_t s_len = arr[0].size(); // all string sizes are the same
 
-    for (size_t i = s_len; i>0; i--){
-        int end_col = i-1;
-        int start_col = end_col - l;
-        num_iter += countingSort(arr, n, l, start_col, end_col, iter);
+    for (int i = s_len-1; i>=0; i--){
+        end_col = i;
+        start_col = end_col - l + 1;
+        num_iter += countingSort(ptr_arr, n, l, start_col, end_col, num_iter);
         num_iter++;
     }
     

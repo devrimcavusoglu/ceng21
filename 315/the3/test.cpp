@@ -72,7 +72,7 @@ void test(){
 int main()
 {
 	srandom(time(0));
-    abc();
+    //abc();
     test();
 	return 0;
 }
