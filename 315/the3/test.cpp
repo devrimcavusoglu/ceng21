@@ -45,12 +45,23 @@ void test(){
 	double duration;
     int numberOfIterations;
 
-    int size = 10;      // max 1000000
+   /* int size = 10;      // max 1000000
     int length = 5;     // max 12
     int l = 2;      // number of characters to be used in counting sort (1,2,3,4 or 6)
+*/
+    int size = 4;      // max 1000000
+    int length = 2;     // max 12
+    int l = 1;      // number of characters to be used in counting sort (1,2,3,4 or 6)
+
 
     std::string* arr;
-    randomArray(arr, size, length);
+
+    arr = new std::string[4];
+    arr[0] = "BA";
+    arr[1] = "AA";
+    arr[2] = "BB";
+    arr[3] = "AB";
+    //randomArray(arr, size, length);
     std::cout << "Array before sorting:" << std::endl;
     printArrayInLine(arr, size);
     if ((begin = clock() ) ==-1)
