@@ -55,26 +55,17 @@ LinkedList<T>::LinkedList() {
 
 template<class T>
 LinkedList<T>::LinkedList(const LinkedList<T> &obj) {
-    size = 0;
-    while (obj.head->next != NULL) {
-        T current = obj.head->data;
-        insertAtTheEnd(current);
-        obj = obj.head;
-        size++;
-   }
+    this = obj;
 }
 
 template<class T>
 LinkedList<T>::~LinkedList() {
-    while (!isEmpty()){
-        T next_ptr = obj.head->next;
-        delete head;
-    }
+    removeAllNodes();
 }
 
 template<class T>
 int LinkedList<T>::getSize() const {
-    return size
+    return size;
 }
 
 template<class T>
@@ -84,13 +75,16 @@ bool LinkedList<T>::isEmpty() const {
 
 template<class T>
 bool LinkedList<T>::contains(Node<T> *node) const {
+    if (isEmpty())
+        return false;
     Node<T> *current = head;
-    while (current != NULL){
+    do {
         if (current->data == node->data){
             return true;
         }
         current = current->next;
-    }
+    } while (current != head);
+
     return false;
 }
 
@@ -101,75 +95,206 @@ Node<T> *LinkedList<T>::getFirstNode() const {
 
 template<class T>
 Node<T> *LinkedList<T>::getLastNode() const {
-    while (head->next != NULL){
-        head = head->next;
-    }
-    return head;
+    if (isEmpty())
+        return NULL;
+    return head->prev;
 }
 
 template<class T>
 Node<T> *LinkedList<T>::getNode(const T &data) const {
-    while (head->next != NULL){
-        if (head->data == data){
-            return head;
+    Node<T> *current = head;
+    do {
+        if (current->data == data){
+            return current;
         }
-    }
-    return nullptr;
+    } while (current->next != head);
+    return NULL;
 }
 
 template<class T>
 Node<T> *LinkedList<T>::getNodeAtIndex(int index) const {
-    /* TODO */
+    Node<T> *current = head;
+    int i = 0;
+    do {
+        if (i == index)
+            return current;
+        current = current->next;
+        i++;
+    } while (current != head);
+    return NULL;
 }
 
 template<class T>
 void LinkedList<T>::insertAtTheFront(const T &data) {
-    /* TODO */
+    if (head == NULL) {
+        Node<T> *new_node = new Node<T>(data);
+        new_node->prev = new_node;
+        new_node->next = new_node;
+        head = new_node;
+    }
+    else {
+        Node<T> *new_node = new Node<T>(data);
+        new_node->prev = head->prev;
+        new_node->next = head;
+        head->prev = new_node;
+        head = new_node;
+    }
+    size++;
 }
 
 template<class T>
 void LinkedList<T>::insertAtTheEnd(const T &data) {
-    /* TODO */
+    if (head == NULL) {
+        insertAtTheFront(data);
+    }
+    else {
+        Node<T> *last_node = getLastNode();
+
+        Node<T> *new_node;
+        if (!head)
+            new_node = new Node<T>(data);
+        else 
+            new_node = new Node<T>(data, last_node, head);
+        head->prev = new_node;
+        last_node->next = new_node;
+        size++;
+    }
 }
 
 template<class T>
 void LinkedList<T>::insertAfterNode(const T &data, Node<T> *node) {
-    /* TODO */
+    Node<T> *prev_node = getNode(data);
+    Node<T> *next_node = prev_node->next;
+    Node<T> *new_node = new Node<T>(data, prev_node, next_node);
+    prev_node->next = new_node;
+    next_node->prev = new_node;
+    size++;
 }
 
 template<class T>
 void LinkedList<T>::insertAsEveryKthNode(const T &data, int k) {
-    /* TODO */
+    if (k > 2){
+        Node<T> *current = head;
+        int i = 0;
+        do {
+            if (i % k == 0) {
+                insertAfterNode(data, current);
+                current = current->next;
+            }
+            current = current->next;
+            i++;
+        } while (current != head);
+    }
 }
 
 template<class T>
 void LinkedList<T>::removeNode(Node<T> *node) {
-    /* TODO */
+    //https://www.geeksforgeeks.org/doubly-circular-linked-list-set-2-deletion/
+    if (contains(node)) {
+        if (size == 1) {
+            Node<T> *current = node;
+            head = NULL;
+            delete current;
+        }
+        else {
+            Node<T> *tmp_prev = node->prev;
+            Node<T> *tmp_next = node->next;
+            tmp_prev->next = tmp_next;
+            tmp_next->prev = tmp_prev;
+            delete node;            
+        }
+        size--;
+    }
 }
 
 template<class T>
 void LinkedList<T>::removeNode(const T &data) {
-    /* TODO */
+    Node<T> *current = head;
+    do {
+        if (current->data = data){
+            current->prev->next = current->next;
+            current->next->prev = current->prev;
+            delete current;
+            size--;
+        }
+        else
+            current = current->next;
+    } while (current != head);
 }
 
 template<class T>
 void LinkedList<T>::removeAllNodes() {
-    /* TODO */
+    while (!isEmpty()){
+        removeNode(head);
+    }
 }
 
 template<class T>
 void LinkedList<T>::removeEveryKthNode(int k) {
-    /* TODO */
+    if (k > 2){
+        Node<T> *current = head;
+        int i = 0;
+        do {
+            if (i % k == 0) {
+                Node<T> *next_node = current->next;
+                removeNode(current);
+                current = next_node;
+            }
+            else {
+                current = current->next;
+                i++;
+            }
+        } while (current != head);
+    }
 }
 
 template<class T>
 void LinkedList<T>::swap(Node<T> *node1, Node<T> *node2) {
-    /* TODO */
+    if (!contains(node1) or !contains(node2)) 
+        return;
+
+    if (node1 == node2)
+        return;
+    else if (node2->next == node1) {
+        Node<T> *temp = node1;
+        node1 = node2;
+        node2 = temp;
+    }
+
+    Node<T> *n1_prev = node1->prev;
+    Node<T> *n2_prev = node2->prev;
+    Node<T> *n1_next = node1->next;
+    Node<T> *n2_next = node2->next;
+
+    if (( node1->next == node2 && node2->prev == node1 ) || ( node1->prev == node2 && node2->next == node1 )) {
+        node1->prev = n1_next;
+        node2->prev = n1_prev;
+        node1->next = n2_next;
+        node2->next = n2_prev;
+    }
+    else {
+        node1->prev = n2_prev;
+        node2->prev = n1_prev;
+        node1->next = n2_next;
+        node2->next = n1_next;
+    }
+
+    node1->prev->next = node1;
+    node1->next->prev = node1;
+    node2->prev->next = node2;
+    node2->next->prev = node2;
 }
 
 template<class T>
 void LinkedList<T>::shuffle(int seed) {
-    /* TODO */
+    //for "i=0" to "i=size-1":
+    //swap the node at index i with the node at index (i*i+seed)%size
+    for (int i = 0; i<size; i++) {
+        int swap_index = (i*i+seed)%size;
+        Node<T> *n1 = getNode(i);
+        Node<T> *n2 = getNode(swap_index);
+        swap(n1, n2);
+    }
 }
 
 template<class T>
@@ -204,7 +329,13 @@ void LinkedList<T>::print(bool reverse) const {
 
 template<class T>
 LinkedList<T> &LinkedList<T>::operator=(const LinkedList<T> &rhs) {
-    /* TODO */
+    size = rhs.size;
+    Node<T> *obj_current = rhs.head;
+    do {
+        insertAtTheFront(obj_current->data);
+        obj_current = obj_current->next;
+   } while (obj_current != rhs.head);
+   return this;
 }
 
 #endif //LINKEDLIST_H

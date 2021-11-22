@@ -4,10 +4,10 @@ CFLAGS=-c -ansi -Wall -pedantic-errors -O0
 all: linkedlist musicstream
 
 musicstream: main_musicstream.o album.o artist.o playlist.o profile.o song.o musicstream.o
-	$(CC) main_musicstream.o album.o artist.o playlist.o profile.o song.o musicstream.o -o musicstream
+	$(CC) main_musicstream.o album.o artist.o playlist.o profile.o song.o musicstream.o -o musicstream.out
 
 linkedlist: main_linkedlist.o
-	$(CC) main_linkedlist.o -o linkedlist
+	$(CC) main_linkedlist.o -o linkedlist.out
 
 main_musicstream.o: main_musicstream.cpp
 	$(CC) $(CFLAGS) main_musicstream.cpp -o main_musicstream.o
