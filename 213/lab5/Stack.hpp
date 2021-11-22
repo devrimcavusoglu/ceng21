@@ -14,6 +14,7 @@ public:
     void push(const T& newItem);    // Adds an item to the top of a stack.
     T pop();		                // Removes and returns the top of a stack.
     T peek() const;                 // Retrieves top of stack.
+    int size();
 
 private:
     T items[MAX_STACK];  	        // array of stack items
@@ -48,6 +49,11 @@ T Stack<T>::pop() { // Removes and returns the top of a stack.
         throw StackException("StackException: stack empty on pop");
     else // stack is not empty; return top
         return (items[top--]);
+}
+
+template <class T>
+int Stack<T>::size(){
+    return top + 1;
 }
 
 template <class T>
