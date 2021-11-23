@@ -79,7 +79,7 @@ bool LinkedList<T>::contains(Node<T> *node) const {
         return false;
     Node<T> *current = head;
     do {
-        if (current->data == node->data){
+        if (current == node){
             return true;
         }
         current = current->next;
@@ -104,10 +104,9 @@ template<class T>
 Node<T> *LinkedList<T>::getNode(const T &data) const {
     Node<T> *current = head;
     do {
-        if (current->data == data){
+        if (current->data == data)
             return current;
-        }
-    } while (current->next != head);
+    } while (current != head);
     return NULL;
 }
 
@@ -144,40 +143,34 @@ void LinkedList<T>::insertAtTheFront(const T &data) {
 
 template<class T>
 void LinkedList<T>::insertAtTheEnd(const T &data) {
-    if (head == NULL) {
+    if (!head) {
         insertAtTheFront(data);
     }
     else {
         Node<T> *last_node = getLastNode();
-
-        Node<T> *new_node;
-        if (!head)
-            new_node = new Node<T>(data);
-        else 
-            new_node = new Node<T>(data, last_node, head);
+        Node<T> *new_node = new Node<T>(data, last_node, head);
         head->prev = new_node;
         last_node->next = new_node;
-        size++;
     }
+    size++;
 }
 
 template<class T>
 void LinkedList<T>::insertAfterNode(const T &data, Node<T> *node) {
-    Node<T> *prev_node = getNode(data);
-    Node<T> *next_node = prev_node->next;
-    Node<T> *new_node = new Node<T>(data, prev_node, next_node);
-    prev_node->next = new_node;
+    Node<T> *next_node = node->next;
+    Node<T> *new_node = new Node<T>(data, node, next_node);
+    node->next = new_node;
     next_node->prev = new_node;
     size++;
 }
 
 template<class T>
 void LinkedList<T>::insertAsEveryKthNode(const T &data, int k) {
-    if (k > 2){
+    if (k >= 2){
         Node<T> *current = head;
-        int i = 0;
+        int i = 1;
         do {
-            if (i % k == 0) {
+            if (i % (k-1) == 0) {
                 insertAfterNode(data, current);
                 current = current->next;
             }
@@ -189,37 +182,60 @@ void LinkedList<T>::insertAsEveryKthNode(const T &data, int k) {
 
 template<class T>
 void LinkedList<T>::removeNode(Node<T> *node) {
-    //https://www.geeksforgeeks.org/doubly-circular-linked-list-set-2-deletion/
-    if (contains(node)) {
-        if (size == 1) {
-            Node<T> *current = node;
-            head = NULL;
-            delete current;
-        }
-        else {
-            Node<T> *tmp_prev = node->prev;
-            Node<T> *tmp_next = node->next;
-            tmp_prev->next = tmp_next;
-            tmp_next->prev = tmp_prev;
-            delete node;            
-        }
-        size--;
+    if (!contains(node)) 
+        return;
+
+    if (size == 1) {
+        delete node;
+        head = NULL;
     }
+    else if (node == getFirstNode()) {
+        Node<T> *prev_node = head->prev;
+        head = head->next;
+        head->prev = prev_node;
+        prev_node->next = head;
+        delete node;
+    }
+    else if (node == getLastNode()) {
+        Node<T> *prev_node = node->prev;
+        prev_node->next = head;
+        head->prev = prev_node;
+        delete node;   
+    }
+    else {
+        Node<T> *tmp_prev = node->prev;
+        Node<T> *tmp_next = node->next;
+        tmp_prev->next = tmp_next;
+        tmp_next->prev = tmp_prev;
+        delete node;            
+    }
+    size--;
 }
 
 template<class T>
 void LinkedList<T>::removeNode(const T &data) {
-    Node<T> *current = head;
-    do {
-        if (current->data = data){
-            current->prev->next = current->next;
-            current->next->prev = current->prev;
-            delete current;
+    std::cout << "size: " << size << "\n";
+    if (!isEmpty()) {
+        if (size == 1 and head->data == data) {
+            delete head;
+            head = NULL;
             size--;
+            return;
         }
-        else
-            current = current->next;
-    } while (current != head);
+        else {
+            Node<T> *current = head;
+            do {
+                if (current->data == data){
+                    current->prev->next = current->next;
+                    current->next->prev = current->prev;
+                    delete current;
+                    size--;
+                    return;
+                }
+                current = current->next;
+            } while (current != head);
+        }
+    }
 }
 
 template<class T>
