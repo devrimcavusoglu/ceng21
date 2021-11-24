@@ -41,6 +41,8 @@ public: // DO NOT CHANGE THIS PART.
 
 private: // YOU MAY ADD YOUR OWN UTILITY MEMBER FUNCTIONS HERE.
 
+    int getIndex(Node<T> *node) const;
+
 private: // DO NOT CHANGE THIS PART.
     Node<T> *head;
 
@@ -90,6 +92,8 @@ bool LinkedList<T>::contains(Node<T> *node) const {
 
 template<class T>
 Node<T> *LinkedList<T>::getFirstNode() const {
+    if (isEmpty())
+        return NULL;
     return head;
 }
 
@@ -125,19 +129,17 @@ Node<T> *LinkedList<T>::getNodeAtIndex(int index) const {
 
 template<class T>
 void LinkedList<T>::insertAtTheFront(const T &data) {
-    if (head == NULL) {
-        Node<T> *new_node = new Node<T>(data);
+    Node<T> *new_node = new Node<T>(data);
+    if (!head) {
         new_node->prev = new_node;
         new_node->next = new_node;
-        head = new_node;
     }
     else {
-        Node<T> *new_node = new Node<T>(data);
         new_node->prev = head->prev;
         new_node->next = head;
         head->prev = new_node;
-        head = new_node;
     }
+    head = new_node;
     size++;
 }
 
@@ -145,6 +147,7 @@ template<class T>
 void LinkedList<T>::insertAtTheEnd(const T &data) {
     if (!head) {
         insertAtTheFront(data);
+        return;
     }
     else {
         Node<T> *last_node = getLastNode();
@@ -186,8 +189,8 @@ void LinkedList<T>::removeNode(Node<T> *node) {
         return;
 
     if (size == 1) {
-        delete node;
         head = NULL;
+        delete node;
     }
     else if (node == getFirstNode()) {
         Node<T> *prev_node = head->prev;
@@ -214,11 +217,11 @@ void LinkedList<T>::removeNode(Node<T> *node) {
 
 template<class T>
 void LinkedList<T>::removeNode(const T &data) {
-    std::cout << "size: " << size << "\n";
     if (!isEmpty()) {
         if (size == 1 and head->data == data) {
-            delete head;
+            Node<T> *tmp = head;
             head = NULL;
+            delete tmp;
             size--;
             return;
         }
@@ -266,12 +269,13 @@ void LinkedList<T>::removeEveryKthNode(int k) {
 
 template<class T>
 void LinkedList<T>::swap(Node<T> *node1, Node<T> *node2) {
+    // https://coderedirect.com/questions/309590/swap-in-doubly-linked-list
     if (!contains(node1) or !contains(node2)) 
         return;
 
     if (node1 == node2)
         return;
-    else if (node2->next == node1) {
+    else if (node2->next == node1 && node1->prev == node2) {
         Node<T> *temp = node1;
         node1 = node2;
         node2 = temp;
@@ -282,7 +286,13 @@ void LinkedList<T>::swap(Node<T> *node1, Node<T> *node2) {
     Node<T> *n1_next = node1->next;
     Node<T> *n2_next = node2->next;
 
-    if (( node1->next == node2 && node2->prev == node1 ) || ( node1->prev == node2 && node2->next == node1 )) {
+    if (node1 == head && node2 == head->prev) {
+        node1->prev = n2_prev;
+        node2->prev = node1;
+        node1->next = node2;
+        node2->next = n1_next;
+    }
+    else if (( node1->next == node2 && node2->prev == node1 ) || ( node1->prev == node2 && node2->next == node1 )) {
         node1->prev = n1_next;
         node2->prev = n1_prev;
         node1->next = n2_next;
