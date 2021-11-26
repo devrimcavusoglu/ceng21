@@ -8,17 +8,17 @@ int main() {
 
     llist.print();
 
-    llist.insertAtTheEnd(1);
+    llist.insertAtTheFront(1);
     llist.insertAtTheEnd(2);
     llist.insertAtTheEnd(3);
-    llist.insertAtTheEnd(4);
-    llist.insertAtTheEnd(5);
+    llist.insertAsEveryKthNode(4, 2);
+    llist.insertAtTheFront(5);
     llist.insertAtTheEnd(7);
-
     llist.print();
-
-    llist.swap(llist.getFirstNode(), llist.getNodeAtIndex(3));
-    std::cout << "==============================" << std::endl;
+    
+    std::cout << "============== size: " << llist.getSize() << " ================" << std::endl;
+    llist.removeEveryKthNode(2);
     llist.print();
+    std::cout << "============== size: " << llist.getSize() << " ================" << std::endl;
     return 0;
 }

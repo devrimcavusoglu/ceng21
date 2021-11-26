@@ -41,7 +41,7 @@ public: // DO NOT CHANGE THIS PART.
 
 private: // YOU MAY ADD YOUR OWN UTILITY MEMBER FUNCTIONS HERE.
 
-    int getIndex(Node<T> *node) const;
+    void updateNode(Node<T> *node);
 
 private: // DO NOT CHANGE THIS PART.
     Node<T> *head;
@@ -57,7 +57,7 @@ LinkedList<T>::LinkedList() {
 
 template<class T>
 LinkedList<T>::LinkedList(const LinkedList<T> &obj) {
-    this = obj;
+    *this = obj;
 }
 
 template<class T>
@@ -137,9 +137,9 @@ void LinkedList<T>::insertAtTheFront(const T &data) {
     else {
         new_node->prev = head->prev;
         new_node->next = head;
-        head->prev = new_node;
     }
     head = new_node;
+    updateNode(head);
     size++;
 }
 
@@ -160,6 +160,8 @@ void LinkedList<T>::insertAtTheEnd(const T &data) {
 
 template<class T>
 void LinkedList<T>::insertAfterNode(const T &data, Node<T> *node) {
+    if (!contains(node)) 
+        return;
     Node<T> *next_node = node->next;
     Node<T> *new_node = new Node<T>(data, node, next_node);
     node->next = new_node;
@@ -169,18 +171,18 @@ void LinkedList<T>::insertAfterNode(const T &data, Node<T> *node) {
 
 template<class T>
 void LinkedList<T>::insertAsEveryKthNode(const T &data, int k) {
-    if (k >= 2){
-        Node<T> *current = head;
-        int i = 1;
-        do {
-            if (i % (k-1) == 0) {
-                insertAfterNode(data, current);
-                current = current->next;
-            }
+    if (k < 2 or k > (size+1))
+        return;
+    Node<T> *current = head;
+    int i = 1;
+    do {
+        if (i % (k-1) == 0) {
+            insertAfterNode(data, current);
             current = current->next;
-            i++;
-        } while (current != head);
-    }
+        }
+        current = current->next;
+        i++;
+    } while (current != head);
 }
 
 template<class T>
@@ -217,28 +219,14 @@ void LinkedList<T>::removeNode(Node<T> *node) {
 
 template<class T>
 void LinkedList<T>::removeNode(const T &data) {
-    if (!isEmpty()) {
-        if (size == 1 and head->data == data) {
-            Node<T> *tmp = head;
-            head = NULL;
-            delete tmp;
-            size--;
-            return;
-        }
-        else {
-            Node<T> *current = head;
-            do {
-                if (current->data == data){
-                    current->prev->next = current->next;
-                    current->next->prev = current->prev;
-                    delete current;
-                    size--;
-                    return;
-                }
-                current = current->next;
-            } while (current != head);
-        }
-    }
+    if (isEmpty()) 
+        return;
+
+    Node<T> *tmp = getNode(data);
+    while (tmp != NULL) {
+        removeNode(tmp);
+        tmp = getNode(data);
+    } 
 }
 
 template<class T>
@@ -250,65 +238,65 @@ void LinkedList<T>::removeAllNodes() {
 
 template<class T>
 void LinkedList<T>::removeEveryKthNode(int k) {
-    if (k > 2){
-        Node<T> *current = head;
-        int i = 0;
-        do {
-            if (i % k == 0) {
-                Node<T> *next_node = current->next;
-                removeNode(current);
-                current = next_node;
-            }
-            else {
-                current = current->next;
-                i++;
-            }
-        } while (current != head);
-    }
+    if (k < 2 or k > (size+1))
+        return;
+    Node<T> *current = head;
+    int i = 0;
+    do {
+        if ((i+1) % k == 0) {
+            Node<T> *next_node = current->next;
+            removeNode(current);
+            current = next_node;
+        }
+        else 
+            current = current->next;
+        i++;
+    } while (current != head);
 }
 
 template<class T>
+void LinkedList<T>::updateNode(Node<T> *node) {
+    node->prev->next = node;
+    node->next->prev = node;
+}
+
+
+template<class T>
 void LinkedList<T>::swap(Node<T> *node1, Node<T> *node2) {
-    // https://coderedirect.com/questions/309590/swap-in-doubly-linked-list
     if (!contains(node1) or !contains(node2)) 
         return;
 
     if (node1 == node2)
         return;
-    else if (node2->next == node1 && node1->prev == node2) {
+    
+    if (node2->next == node1) {
         Node<T> *temp = node1;
         node1 = node2;
         node2 = temp;
     }
 
-    Node<T> *n1_prev = node1->prev;
-    Node<T> *n2_prev = node2->prev;
-    Node<T> *n1_next = node1->next;
-    Node<T> *n2_next = node2->next;
+    if (node2->next != node1) { // More than 2 nodes in the list
+        Node<T> *n1_prev = node1->prev;
+        Node<T> *n2_next = node2->next;
 
-    if (node1 == head && node2 == head->prev) {
-        node1->prev = n2_prev;
-        node2->prev = node1;
-        node1->next = node2;
-        node2->next = n1_next;
-    }
-    else if (( node1->next == node2 && node2->prev == node1 ) || ( node1->prev == node2 && node2->next == node1 )) {
-        node1->prev = n1_next;
+        if (node1->next == node2) {
+            node1->prev = node1->next;
+            node2->next = node2->prev;
+        } else {
+            node1->prev = node2->prev;
+            node2->next = node1->next;
+        }
         node2->prev = n1_prev;
         node1->next = n2_next;
-        node2->next = n2_prev;
-    }
-    else {
-        node1->prev = n2_prev;
-        node2->prev = n1_prev;
-        node1->next = n2_next;
-        node2->next = n1_next;
-    }
 
-    node1->prev->next = node1;
-    node1->next->prev = node1;
-    node2->prev->next = node2;
-    node2->next->prev = node2;
+        updateNode(node1);
+        updateNode(node2);
+    }
+    // If head was swapped, it should reference the other one now
+    if (head == node1)
+        head = node2;
+    else if (head == node2)
+        head = node1;
 }
 
 template<class T>
@@ -317,9 +305,7 @@ void LinkedList<T>::shuffle(int seed) {
     //swap the node at index i with the node at index (i*i+seed)%size
     for (int i = 0; i<size; i++) {
         int swap_index = (i*i+seed)%size;
-        Node<T> *n1 = getNode(i);
-        Node<T> *n2 = getNode(swap_index);
-        swap(n1, n2);
+        swap(getNodeAtIndex(i), getNodeAtIndex(swap_index));
     }
 }
 
@@ -356,12 +342,8 @@ void LinkedList<T>::print(bool reverse) const {
 template<class T>
 LinkedList<T> &LinkedList<T>::operator=(const LinkedList<T> &rhs) {
     size = rhs.size;
-    Node<T> *obj_current = rhs.head;
-    do {
-        insertAtTheFront(obj_current->data);
-        obj_current = obj_current->next;
-   } while (obj_current != rhs.head);
-   return this;
+    head = rhs.head;
+    return *this;
 }
 
 #endif //LINKEDLIST_H
