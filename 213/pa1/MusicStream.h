@@ -38,6 +38,9 @@ public: // DO NOT CHANGE THIS PART.
     void print() const;
 
 private: // YOU MAY ADD YOUR OWN UTILITY MEMBER FUNCTIONS HERE.
+    Profile *findUser(const std::string &email);
+    Album *findAlbum(const int &albumId);
+    Artist *findArtist(const int &artistId);
 
 private: // DO NOT CHANGE THIS PART.
     LinkedList<Profile> profiles;

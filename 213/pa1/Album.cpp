@@ -22,11 +22,11 @@ const LinkedList<Song *> &Album::getSongs() const {
 }
 
 void Album::addSong(Song *song) {
-    /* TODO */
+    songs.insertAtTheEnd(song);
 }
 
 void Album::dropSong(Song *song) {
-    /* TODO */
+    songs.removeNode(song);
 }
 
 bool Album::operator==(const Album &rhs) const {

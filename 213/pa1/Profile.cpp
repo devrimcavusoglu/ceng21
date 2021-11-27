@@ -35,47 +35,73 @@ void Profile::setPlan(SubscriptionPlan plan) {
 }
 
 void Profile::followProfile(Profile *profile) {
-    /* TODO */
+    // Update `profile` followers as well
+    LinkedList<Profile *> p_followers = profile.getFollowers();
+    p_followers.insertAtTheEnd(*this);
+
+    // Add to current user's followings
+    following.insertAtTheEnd(profile);
 }
 
 void Profile::unfollowProfile(Profile *profile) {
-    /* TODO */
+    // Update `profile` followers as well
+    LinkedList<Profile *> p_followers = profile.getFollowers();
+    p_followers.removeNode(*this);
+
+    // Remove also from curret user's following 
+    following.removeNode(profile);
 }
 
 void Profile::createPlaylist(const std::string &playlistName) {
-    /* TODO */
+    Playlist new_playlist = Playlist(playlistName);
+    playlists.insertAtTheEnd(new_playlist);
 }
 
 void Profile::deletePlaylist(int playlistId) {
-    /* TODO */
+    Playlist *selected_playlist = playlists.getNode(playlistId);
+    playlists.removeNode(selected_playlist);
 }
 
 void Profile::addSongToPlaylist(Song *song, int playlistId) {
-    /* TODO */
+    Playlist *selected_playlist = playlists.getNodeAtIndex(playlistId-1);
+    selected_playlist.addSong(song);
 }
 
 void Profile::deleteSongFromPlaylist(Song *song, int playlistId) {
-    /* TODO */
+    Playlist *selected_playlist = playlists.getNodeAtIndex(playlistId-1);
+    selected_playlist.dropSong(song);
 }
 
 Playlist *Profile::getPlaylist(int playlistId) {
-    /* TODO */
+    return playlists.getNodeAtIndex(playlistId-1);
 }
 
 LinkedList<Playlist *> Profile::getSharedPlaylists() {
-    /* TODO */
+    LinkedList<Playlist *> shared_playlist = new LinkedList<PLaylist *>;
+    Playlist *current_pl = playlists.head;
+
+    do {
+        if (current_pl.isShared()) {
+            shared_playlist.insertAtTheEnd(current_pl);
+        }
+        current_pl = current_pl->next;
+    } while (current_pl != playlists.head);
+    return shared_playlist;
 }
 
 void Profile::shufflePlaylist(int playlistId, int seed) {
-    /* TODO */
+    Playlist *selected_playlist = playlists.getNodeAtIndex(playlistId-1);
+    selected_playlist.shuffle(seed);
 }
 
 void Profile::sharePlaylist(int playlistId) {
-    /* TODO */
+    Playlist *selected_playlist = playlists.getNodeAtIndex(playlistId-1);
+    selected_playlist.setShared(true);
 }
 
 void Profile::unsharePlaylist(int playlistId) {
-    /* TODO */
+    Playlist *selected_playlist = playlists.getNodeAtIndex(playlistId-1);
+    selected_playlist.setShared(false);
 }
 
 bool Profile::operator==(const Profile &rhs) const {
