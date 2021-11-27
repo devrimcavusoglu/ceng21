@@ -2,66 +2,59 @@
 
 #include <iostream>
 
-Profile *findUser(const std::string &email) {
-    Profile *profile = profiles.head;
+Profile MusicStream::findUser(const std::string &email) {
+    Node<Profile> *profile = profiles.getFirstNode();
     do {
-        if (profile->email == email) 
-            return profile;
+        if (profile->data.getEmail() == email) 
+            return profile->data;
         profile = profile->next;
-    } while (profile != profiles.head);
-    return NULL;
+    } while (profile != profiles.getFirstNode());
 }
 
-Album *findAlbum(const int &albumId) {
-    Album *album = albums.head;
+Album MusicStream::findAlbum(const int &albumId) {
+    Node<Album> *album = albums.getFirstNode();
     do {
-        if (album.getAlbumId() == albumId) 
-            return album;
-    } while (album != albums.head);
-    return NULL;
+        if (album->data.getAlbumId() == albumId) 
+            return album->data;
+    } while (album != albums.getFirstNode());
 }
 
-Artist *findArtist(const int &artistId) {
-    Artist *artist = artists.head;
+Artist MusicStream::findArtist(const int &artistId) {
+    Node<Artist> *artist = artists.getFirstNode();
     do {
-        if (artist.getArtistId() == artistId) 
-            return artist;
-    } while (artist != artists.head);
-    return NULL;
+        if (artist->data.getArtistId() == artistId) 
+            return artist->data;
+    } while (artist != artists.getFirstNode());
 }
 
 
-Song *findSong(const int &songId) {
-    Song *song = songs.head;
+Song MusicStream::findSong(const int &songId) {
+    Node<Song> *song = songs.getFirstNode();
     do {
-        if (song.getSongId() == songId) 
-            return song;
-    } while (song != songs.head);
-    return NULL;
+        if (song->data.getSongId() == songId) 
+            return song->data;
+    } while (song != songs.getFirstNode());
 }
 
 void MusicStream::addProfile(const std::string &email, const std::string &username, SubscriptionPlan plan) {
     Profile *profile = new Profile(email, username, plan);
-    profiles.insertAtTheEnd(profile);   
+    profiles.insertAtTheEnd(*profile);   
 }
 
 void MusicStream::deleteProfile(const std::string &email) {   
-    Profile *profile_to_be_deleted = find(email);
-
-    if (!profile_to_be_deleted)
-        return;
+    Profile profile_to_be_deleted = findUser(email);
 
     // Delete the profile from followers
-    Profile *follower = profile_to_be_deleted.followers.head;
+    Node<Profile *> *follower = profile_to_be_deleted.getFollowers().getFirstNode();
     do {
-        follower.following.removeNode(profile_to_be_deleted);
-    } while (follower != profile_to_be_deleted.followers.head);
+        follower->data->getFollowings().removeNode(&profile_to_be_deleted);
+    } while (follower != profile_to_be_deleted.getFollowers().getFirstNode());
 
     // Delete the profile from followings' followers' 
-    Profile *following = profile_to_be_deleted.following.head;
+    Node<Profile *> *following = profile_to_be_deleted.getFollowings().getFirstNode();
     do {
-        following.followers.removeNode(profile_to_be_deleted);
-    } while (following != profile_to_be_deleted.following.head);
+        following->data->getFollowers().removeNode(&profile_to_be_deleted);
+    } while (following != profile_to_be_deleted.getFollowings().getFirstNode());
 
     // Remove the profile from profiles
     profiles.removeNode(profile_to_be_deleted);   
@@ -69,110 +62,124 @@ void MusicStream::deleteProfile(const std::string &email) {
 
 void MusicStream::addArtist(const std::string &artistName) {
     Artist *artist = new Artist(artistName);
-    artists.insertAtTheEnd(artist);
+    artists.insertAtTheEnd(*artist);
 }
 
 void MusicStream::addAlbum(const std::string &albumName, int artistId) {
     Album *album = new Album(albumName);
-    albums.insertAtTheEnd(album);
+    albums.insertAtTheEnd(*album);
 
     // Also, insert the song to the album
-    Artist *artist = findArtist(artistName);
-    if (!artist)
-        return;
+    Artist artist = findArtist(artistId);
     artist.addAlbum(album);
 }
 
 void MusicStream::addSong(const std::string &songName, int songDuration, int albumId) {
     Song *song = new Song(songName, songDuration);
-    songs.insertAtTheEnd(song);
+    songs.insertAtTheEnd(*song);
 
     // Also, insert the song to the album
-    Album *album = findAlbum(albumId);
-    if (!album)
-        return;
+    Album album = findAlbum(albumId);
     album.addSong(song);
 }
 
 void MusicStream::followProfile(const std::string &email1, const std::string &email2) {
-    Profile *user_1 = findUser(email1);
-    Profile *user_2 = findUser(email2);
+    Profile user_1 = findUser(email1);
+    Profile user_2 = findUser(email2);
 
-    user1.followProfile(user_2);
+    user_1.followProfile(&user_2);
 }
 
 void MusicStream::unfollowProfile(const std::string &email1, const std::string &email2) {
-    Profile *user_1 = findUser(email1);
-    Profile *user_2 = findUser(email2);
+    Profile user_1 = findUser(email1);
+    Profile user_2 = findUser(email2);
 
-    user1.followProfile(user_2);
+    user_1.unfollowProfile(&user_2);
 }
 
 void MusicStream::createPlaylist(const std::string &email, const std::string &playlistName) {
-    Profile *user = findUser(email);
+    Profile user = findUser(email);
     user.createPlaylist(playlistName);
 }
 
 void MusicStream::deletePlaylist(const std::string &email, int playlistId) {
-    Profile *user = findUser(email);
+    Profile user = findUser(email);
     user.deletePlaylist(playlistId);
 }
 
 void MusicStream::addSongToPlaylist(const std::string &email, int songId, int playlistId) {
-    Profile *user = findUser(email);
-    Song *song = findSong(songId);
+    Profile user = findUser(email);
+    Song song = findSong(songId);
 
     Playlist *playlist = user.getPlaylist(playlistId);
-    playlist.addSong(song);
+    playlist->addSong(&song);
 }
 
 void MusicStream::deleteSongFromPlaylist(const std::string &email, int songId, int playlistId) {
-    Profile *user = findUser(email);
-    Song *song = findSong(songId);
+    Profile user = findUser(email);
+    Song song = findSong(songId);
 
     Playlist *playlist = user.getPlaylist(playlistId);
-    playlist.dropSong(song);
+    playlist->dropSong(&song);
 }
 
 LinkedList<Song *> MusicStream::playPlaylist(const std::string &email, Playlist *playlist) {
-    Profile *user = findUser(email);
-    Playlist *playlist = user.getPlaylist(playlistId);
+    Profile user = findUser(email);
 
-    if (user.getPlan() == SubscriptionPlan::premium)
-        return playlist;
+    if (user.getPlan() == premium)
+        return playlist->getSongs();
 
-    Song *advertisement = new Song.ADVERTISEMENT_SONG;
-    playlist.songs.insertAsEveryKthNode(2, advertisement);
-    return playlist;
+    Song *ad_song = &Song::ADVERTISEMENT_SONG;
+    playlist->getSongs().insertAsEveryKthNode(ad_song, 2);
+    return playlist->getSongs();
 }
 
 Playlist *MusicStream::getPlaylist(const std::string &email, int playlistId) {
-    Profile *user = findUser(email);
+    Profile user = findUser(email);
     return user.getPlaylist(playlistId);
 }
 
 LinkedList<Playlist *> MusicStream::getSharedPlaylists(const std::string &email) {
-    /* TODO */
+    Profile user = findUser(email);
+    Node<Profile *> *following = user.getFollowings().getFirstNode();
+
+    LinkedList<Playlist *> shared_playlists;
+    
+    do {
+        LinkedList<Playlist *> shared_playlist = user.getSharedPlaylists();
+        Node<Playlist *> *current_pl = shared_playlist.getFirstNode();
+        do {
+            shared_playlists.insertAtTheEnd(current_pl->data);
+            current_pl = current_pl->next;
+        } while (current_pl != shared_playlist.getFirstNode());
+    } while (following != user.getFollowings().getFirstNode());
+
+    return shared_playlists;
 }
 
 void MusicStream::shufflePlaylist(const std::string &email, int playlistId, int seed) {
-    /* TODO */
+    Profile user = findUser(email);
+    user.shufflePlaylist(playlistId, seed);
 }
 
 void MusicStream::sharePlaylist(const std::string &email, int playlistId) {
-    /* TODO */
+    Profile user = findUser(email);
+    user.sharePlaylist(playlistId);
 }
 
 void MusicStream::unsharePlaylist(const std::string &email, int playlistId) {
-    /* TODO */
+    Profile user = findUser(email);
+    user.sharePlaylist(playlistId);
 }
 
 void MusicStream::subscribePremium(const std::string &email) {
-    /* TODO */
+    Profile user = findUser(email);
+    user.setPlan(premium);
 }
 
 void MusicStream::unsubscribePremium(const std::string &email) {
-    /* TODO */
+    Profile user = findUser(email);
+    user.setPlan(free_of_charge);
 }
 
 void MusicStream::print() const {
