@@ -58,23 +58,26 @@ void Profile::createPlaylist(const std::string &playlistName) {
 }
 
 void Profile::deletePlaylist(int playlistId) {
-    Node<Playlist> *selected_playlist = playlists.getNodeAtIndex(playlistId);
-    playlists.removeNode(selected_playlist->data);
+    Playlist *selected_playlist = getPlaylist(playlistId);
+    playlists.removeNode(*selected_playlist);
 }
 
 void Profile::addSongToPlaylist(Song *song, int playlistId) {
-    Node<Playlist> *selected_playlist = playlists.getNodeAtIndex(playlistId-1);
-    selected_playlist->data.addSong(song);
+    Playlist *selected_playlist = getPlaylist(playlistId);
+    selected_playlist->addSong(song);
 }
 
 void Profile::deleteSongFromPlaylist(Song *song, int playlistId) {
-    Node<Playlist> *selected_playlist = playlists.getNodeAtIndex(playlistId-1);
-    selected_playlist->data.dropSong(song);
+    Playlist *selected_playlist = getPlaylist(playlistId);
+    selected_playlist->dropSong(song);
 }
 
 Playlist *Profile::getPlaylist(int playlistId) {
-    Node<Playlist> *selected_playlist = playlists.getNodeAtIndex(playlistId-1);
-    return &selected_playlist->data;
+    Node<Playlist> *current_pl = playlists.getFirstNode();
+    do {
+        if (current_pl->data.getPlaylistId() == playlistId)
+            return &current_pl->data;
+    } while (current_pl != playlists.getFirstNode());
 }
 
 LinkedList<Playlist *> Profile::getSharedPlaylists() {

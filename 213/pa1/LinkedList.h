@@ -106,16 +106,21 @@ Node<T> *LinkedList<T>::getLastNode() const {
 
 template<class T>
 Node<T> *LinkedList<T>::getNode(const T &data) const {
+    if (isEmpty())
+        return NULL;
     Node<T> *current = head;
     do {
         if (current->data == data)
             return current;
+        current = current->next;
     } while (current != head);
     return NULL;
 }
 
 template<class T>
 Node<T> *LinkedList<T>::getNodeAtIndex(int index) const {
+    if (index >= size)
+        return NULL;
     Node<T> *current = head;
     int i = 0;
     do {
@@ -152,8 +157,7 @@ void LinkedList<T>::insertAtTheEnd(const T &data) {
     else {
         Node<T> *last_node = getLastNode();
         Node<T> *new_node = new Node<T>(data, last_node, head);
-        head->prev = new_node;
-        last_node->next = new_node;
+        updateNode(new_node);
     }
     size++;
 }
@@ -164,8 +168,7 @@ void LinkedList<T>::insertAfterNode(const T &data, Node<T> *node) {
         return;
     Node<T> *next_node = node->next;
     Node<T> *new_node = new Node<T>(data, node, next_node);
-    node->next = new_node;
-    next_node->prev = new_node;
+    updateNode(new_node);
     size++;
 }
 
@@ -192,28 +195,26 @@ void LinkedList<T>::removeNode(Node<T> *node) {
 
     if (size == 1) {
         head = NULL;
-        delete node;
     }
     else if (node == getFirstNode()) {
         Node<T> *prev_node = head->prev;
         head = head->next;
         head->prev = prev_node;
         prev_node->next = head;
-        delete node;
     }
     else if (node == getLastNode()) {
         Node<T> *prev_node = node->prev;
         prev_node->next = head;
         head->prev = prev_node;
-        delete node;   
     }
     else {
         Node<T> *tmp_prev = node->prev;
         Node<T> *tmp_next = node->next;
         tmp_prev->next = tmp_next;
         tmp_next->prev = tmp_prev;
-        delete node;            
+                    
     }
+    delete node;
     size--;
 }
 
