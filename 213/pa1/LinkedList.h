@@ -342,8 +342,17 @@ void LinkedList<T>::print(bool reverse) const {
 
 template<class T>
 LinkedList<T> &LinkedList<T>::operator=(const LinkedList<T> &rhs) {
-    size = rhs.size;
-    head = rhs.head;
+    this->size = rhs.size;
+    Node<T> *rhs_current = rhs.getFirstNode();
+    if (rhs_current == NULL) {
+        this->head = NULL;
+    }
+    else {
+        do {
+            insertAtTheEnd(rhs_current->data);
+            rhs_current = rhs_current->next;
+        } while(rhs_current != rhs.getFirstNode());
+    }
     return *this;
 }
 
