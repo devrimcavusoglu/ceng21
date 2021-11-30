@@ -97,13 +97,21 @@ void Profile::shufflePlaylist(int playlistId, int seed) {
 }
 
 void Profile::sharePlaylist(int playlistId) {
-    Node<Playlist> *selected_playlist = playlists.getNodeAtIndex(playlistId-1);
-    selected_playlist->data.setShared(true);
+    Node<Playlist> *selected_playlist = playlists.getFirstNode();
+    do {
+        if (selected_playlist->data.getPlaylistId() == playlistId)
+            selected_playlist->data.setShared(true);
+        selected_playlist = selected_playlist->next;
+    } while (selected_playlist != playlists.getFirstNode());
 }
 
 void Profile::unsharePlaylist(int playlistId) {
-    Node<Playlist> *selected_playlist = playlists.getNodeAtIndex(playlistId-1);
-    selected_playlist->data.setShared(false);
+    Node<Playlist> *selected_playlist = playlists.getFirstNode();
+    do {
+        if (selected_playlist->data.getPlaylistId() == playlistId)
+            selected_playlist->data.setShared(false);
+        selected_playlist = selected_playlist->next;
+    } while (selected_playlist != playlists.getFirstNode());
 }
 
 bool Profile::operator==(const Profile &rhs) const {
