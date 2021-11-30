@@ -57,12 +57,15 @@ LinkedList<T>::LinkedList() {
 
 template<class T>
 LinkedList<T>::LinkedList(const LinkedList<T> &obj) {
+    head = NULL;
+    size = 0;
     *this = obj;
 }
 
 template<class T>
 LinkedList<T>::~LinkedList() {
     removeAllNodes();
+    delete head;
 }
 
 template<class T>
@@ -194,7 +197,10 @@ void LinkedList<T>::removeNode(Node<T> *node) {
         return;
 
     if (size == 1) {
+        delete node;
         head = NULL;
+        size = 0;
+        return;
     }
     else if (node == getFirstNode()) {
         Node<T> *prev_node = head->prev;
@@ -212,7 +218,6 @@ void LinkedList<T>::removeNode(Node<T> *node) {
         Node<T> *tmp_next = node->next;
         tmp_prev->next = tmp_next;
         tmp_next->prev = tmp_prev;
-                    
     }
     delete node;
     size--;
@@ -342,10 +347,10 @@ void LinkedList<T>::print(bool reverse) const {
 
 template<class T>
 LinkedList<T> &LinkedList<T>::operator=(const LinkedList<T> &rhs) {
-    this->size = rhs.size;
     Node<T> *rhs_current = rhs.getFirstNode();
     if (rhs_current == NULL) {
         this->head = NULL;
+        this->size = rhs.getSize();
     }
     else {
         do {

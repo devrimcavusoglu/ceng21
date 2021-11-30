@@ -121,7 +121,6 @@ void test_copy_constructor_update() {
     print_size(llist);
 
     std::cout << "head of llist: " << llist.getFirstNode()->data << std::endl;
-    //print_size(llist);
 }
 
 int main() {

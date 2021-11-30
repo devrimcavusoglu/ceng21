@@ -36,8 +36,7 @@ void Profile::setPlan(SubscriptionPlan plan) {
 
 void Profile::followProfile(Profile *profile) {
     // Update `profile` followers as well
-    LinkedList<Profile *> p_followers = profile->getFollowers();
-    p_followers.insertAtTheEnd(this);
+    profile->getFollowers().insertAtTheEnd(this);
 
     // Add to current user's followings
     following.insertAtTheEnd(profile);
@@ -45,8 +44,7 @@ void Profile::followProfile(Profile *profile) {
 
 void Profile::unfollowProfile(Profile *profile) {
     // Update `profile` followers as well
-    LinkedList<Profile *> p_followers = profile->getFollowers();
-    p_followers.removeNode(this);
+    profile->getFollowers().removeNode(this);
 
     // Remove also from curret user's following 
     following.removeNode(profile);
@@ -76,8 +74,9 @@ Playlist *Profile::getPlaylist(int playlistId) {
     Node<Playlist> *current_pl = playlists.getFirstNode();
     do {
         if (current_pl->data.getPlaylistId() == playlistId)
-            return &current_pl->data;
+            break;
     } while (current_pl != playlists.getFirstNode());
+    return &current_pl->data;
 }
 
 LinkedList<Playlist *> Profile::getSharedPlaylists() {
