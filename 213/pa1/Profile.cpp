@@ -80,15 +80,15 @@ Playlist *Profile::getPlaylist(int playlistId) {
 }
 
 LinkedList<Playlist *> Profile::getSharedPlaylists() {
-    LinkedList<Playlist *> *shared_playlist = new LinkedList<Playlist *>;
+    LinkedList<Playlist *> shared_playlist;
     Node<Playlist> *current_pl = playlists.getFirstNode();
 
     do {
         if (current_pl->data.isShared()) 
-            shared_playlist->insertAtTheEnd(&current_pl->data);
+            shared_playlist.insertAtTheEnd(&current_pl->data);
         current_pl = current_pl->next;
     } while (current_pl != playlists.getFirstNode());
-    return *shared_playlist;
+    return shared_playlist;
 }
 
 void Profile::shufflePlaylist(int playlistId, int seed) {
