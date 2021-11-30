@@ -6,25 +6,28 @@ Profile MusicStream::findUser(const std::string &email) {
     Node<Profile> *profile = profiles.getFirstNode();
     do {
         if (profile->data.getEmail() == email) 
-            return profile->data;
+            break;
         profile = profile->next;
     } while (profile != profiles.getFirstNode());
+    return profile->data;
 }
 
 Album MusicStream::findAlbum(const int &albumId) {
     Node<Album> *album = albums.getFirstNode();
     do {
         if (album->data.getAlbumId() == albumId) 
-            return album->data;
+            break;            
     } while (album != albums.getFirstNode());
+    return album->data;
 }
 
 Artist MusicStream::findArtist(const int &artistId) {
     Node<Artist> *artist = artists.getFirstNode();
     do {
         if (artist->data.getArtistId() == artistId) 
-            return artist->data;
+            break;
     } while (artist != artists.getFirstNode());
+    return artist->data;
 }
 
 
@@ -32,13 +35,14 @@ Song MusicStream::findSong(const int &songId) {
     Node<Song> *song = songs.getFirstNode();
     do {
         if (song->data.getSongId() == songId) 
-            return song->data;
+            break;
     } while (song != songs.getFirstNode());
+    return song->data;
 }
 
 void MusicStream::addProfile(const std::string &email, const std::string &username, SubscriptionPlan plan) {
-    Profile *profile = new Profile(email, username, plan);
-    profiles.insertAtTheEnd(*profile);   
+    Profile profile = Profile(email, username, plan);
+    profiles.insertAtTheEnd(profile);   
 }
 
 void MusicStream::deleteProfile(const std::string &email) {   
@@ -61,26 +65,26 @@ void MusicStream::deleteProfile(const std::string &email) {
 }
 
 void MusicStream::addArtist(const std::string &artistName) {
-    Artist *artist = new Artist(artistName);
-    artists.insertAtTheEnd(*artist);
+    Artist artist = Artist(artistName);
+    artists.insertAtTheEnd(artist);
 }
 
 void MusicStream::addAlbum(const std::string &albumName, int artistId) {
-    Album *album = new Album(albumName);
-    albums.insertAtTheEnd(*album);
+    Album album = Album(albumName);
+    albums.insertAtTheEnd(album);
 
     // Also, insert the song to the album
     Artist artist = findArtist(artistId);
-    artist.addAlbum(album);
+    artist.addAlbum(&album);
 }
 
 void MusicStream::addSong(const std::string &songName, int songDuration, int albumId) {
-    Song *song = new Song(songName, songDuration);
-    songs.insertAtTheEnd(*song);
+    Song song = Song(songName, songDuration);
+    songs.insertAtTheEnd(song);
 
     // Also, insert the song to the album
     Album album = findAlbum(albumId);
-    album.addSong(song);
+    album.addSong(&song);
 }
 
 void MusicStream::followProfile(const std::string &email1, const std::string &email2) {
