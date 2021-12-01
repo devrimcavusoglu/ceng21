@@ -42,7 +42,6 @@ void test_follow_profile() {
     print_end_test();
 }
 
-
 void test_delete_profile() {
     print_begin_test("Delete profile");
     MusicStream ms;
@@ -52,12 +51,30 @@ void test_delete_profile() {
     ms.addProfile("harry@smith.com", "harry_smith", free_of_charge);
 
     std::cout << ">>>> Delete user `john_doe`\n";
-    ms.deleteProfile("john@doe.com");
+    ms.deleteProfile("harry@smith.com");
 
     ms.print();
     print_end_test();
 }
 
+void test_follow_delete_profile() {
+    print_begin_test("Add Follow Delete profile");
+    MusicStream ms;
+
+    std::cout << ">>>> Adding users `john_doe` and `harry_smith`\n";
+    ms.addProfile("john@doe.com", "john_doe", free_of_charge);
+    ms.addProfile("harry@smith.com", "harry_smith", free_of_charge);
+
+    std::cout << ">>>> Make `john_doe` and `harry_smith` follow each other\n";
+    ms.followProfile("john@doe.com", "harry@smith.com");
+    ms.followProfile("harry@smith.com", "john@doe.com");
+    ms.print();
+
+    std::cout << ">>>> Deleting user `john_doe`\n";
+    ms.deleteProfile("john@doe.com");
+    ms.print();
+    print_end_test();
+}
 
 void test_add_album() {
     print_begin_test("Adding 1 artist, 2 albums");
@@ -194,15 +211,13 @@ void test_subscription() {
 int main() {
     test_add_profile();
     test_follow_profile();  
-    test_delete_profile();  
+    test_delete_profile();
+    test_follow_delete_profile();  
     test_add_album();
     test_add_song();
     test_playlist();
     test_share_playlist();
     test_subscription();
-    //ms.deleteSongFromPlaylist("john@doe.com", 2, 1);
-    /*ms.addSong("Things We Said Today", 155, 2);
-    ms.addSong("You Can't Do That", 155, 2);*/
 
     return 0;
 }
