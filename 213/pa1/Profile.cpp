@@ -35,19 +35,19 @@ void Profile::setPlan(SubscriptionPlan plan) {
 }
 
 void Profile::followProfile(Profile *profile) {
-    // Update `profile` followers as well
-    profile->getFollowers().insertAtTheEnd(this);
-
     // Add to current user's followings
     following.insertAtTheEnd(profile);
+    
+    // Update `profile` followers as well
+    profile->getFollowers().insertAtTheEnd(this);
 }
 
 void Profile::unfollowProfile(Profile *profile) {
-    // Update `profile` followers as well
-    profile->getFollowers().removeNode(this);
-
     // Remove also from curret user's following 
     following.removeNode(profile);
+    
+    // Update `profile` followers
+    profile->getFollowers().removeNode(this);
 }
 
 void Profile::createPlaylist(const std::string &playlistName) {

@@ -63,24 +63,19 @@ void MusicStream::deleteProfile(const std::string &email) {
     if (profile_to_be_deleted == NULL)
         return;
 
-    // Make profile_to_be_deleted's followers unfollow this user
-    if (profile_to_be_deleted->getFollowers().getSize() > 0) {
-        Node<Profile *> *follower = profile_to_be_deleted->getFollowers().getFirstNode();
-        do {
-            std::cout << *profile_to_be_deleted << std::endl;
-            follower->data->unfollowProfile(profile_to_be_deleted);
-            follower = follower->next;
-        } while (!profile_to_be_deleted->getFollowers().isEmpty());
-    }
+    Node<Profile *> *following;
+    Node<Profile *> *follower;
 
     // Make profile_to_be_deleted unfollow everyone 
-    if (profile_to_be_deleted->getFollowings().getSize() > 0) {
-        Node<Profile *> *following = profile_to_be_deleted->getFollowings().getFirstNode();
-        do {
-            std::cout << *profile_to_be_deleted << std::endl;
-            profile_to_be_deleted->unfollowProfile(following->data);
-            following = following->next;
-        } while (!profile_to_be_deleted->getFollowings().isEmpty());
+    while (!profile_to_be_deleted->getFollowings().isEmpty()) {
+        following = profile_to_be_deleted->getFollowings().getFirstNode();
+        profile_to_be_deleted->unfollowProfile(following->data);
+    }
+
+    // Make profile_to_be_deleted's followers unfollow this user
+    while (!profile_to_be_deleted->getFollowers().isEmpty()) {
+        follower = profile_to_be_deleted->getFollowers().getFirstNode();
+        follower->data->unfollowProfile(profile_to_be_deleted);
     }
 
     // Remove the profile from profiles

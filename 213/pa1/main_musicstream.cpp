@@ -50,8 +50,10 @@ void test_delete_profile() {
     ms.addProfile("john@doe.com", "john_doe", free_of_charge);
     ms.addProfile("harry@smith.com", "harry_smith", free_of_charge);
 
+    ms.followProfile("john@doe.com", "harry@smith.com");
+
     std::cout << ">>>> Delete user `john_doe`\n";
-    ms.deleteProfile("harry@smith.com");
+    ms.deleteProfile("john@doe.com");
 
     ms.print();
     print_end_test();
@@ -64,10 +66,12 @@ void test_follow_delete_profile() {
     std::cout << ">>>> Adding users `john_doe` and `harry_smith`\n";
     ms.addProfile("john@doe.com", "john_doe", free_of_charge);
     ms.addProfile("harry@smith.com", "harry_smith", free_of_charge);
+    ms.addProfile("jane@doe.com", "jane_doe", free_of_charge);
 
-    std::cout << ">>>> Make `john_doe` and `harry_smith` follow each other\n";
+    std::cout << ">>>> Make `john_doe` follow `harry_smith`\n";
     ms.followProfile("john@doe.com", "harry@smith.com");
-    ms.followProfile("harry@smith.com", "john@doe.com");
+    std::cout << ">>>> Make `harry_smith` follow `jane_doe`\n";
+    ms.followProfile("harry@smith.com", "jane@doe.com");
     ms.print();
 
     std::cout << ">>>> Deleting user `john_doe`\n";
@@ -148,6 +152,10 @@ void test_playlist() {
     Playlist* johns_playlist = ms.getPlaylist("john@doe.com", 1); 
     LinkedList<Song *> johns_songs = ms.playPlaylist("john@doe.com", johns_playlist);
     johns_songs.print();
+
+    std::cout << ">>>> Deleting playlist\n";
+    ms.deletePlaylist("john@doe.com", 1);
+    ms.print();
 
     print_end_test();
 }
