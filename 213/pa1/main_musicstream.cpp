@@ -70,6 +70,9 @@ void test_follow_delete_profile() {
 
     std::cout << ">>>> Make `john_doe` follow `harry_smith`\n";
     ms.followProfile("john@doe.com", "harry@smith.com");
+    std::cout << ">>>> Make `john_doe` and `jane_doe` follow each other\n";
+    ms.followProfile("john@doe.com", "jane@doe.com");
+    ms.followProfile("jane@doe.com", "john@doe.com");
     std::cout << ">>>> Make `harry_smith` follow `jane_doe`\n";
     ms.followProfile("harry@smith.com", "jane@doe.com");
     ms.print();
@@ -166,6 +169,9 @@ void test_share_playlist() {
 
     std::cout << ">>>> Adding user `john_doe`\n";
     ms.addProfile("john@doe.com", "john_doe", free_of_charge);
+    ms.addProfile("harry@smith.com", "harry_smith", free_of_charge);
+
+    ms.followProfile("harry@smith.com", "john@doe.com");
 
     std::cout << ">>>> Adding artist `The Beatles`\n";
     ms.addArtist("The Beatles");
@@ -190,6 +196,9 @@ void test_share_playlist() {
     std::cout << ">>>> Share Playlist with id 2\n";
     ms.sharePlaylist("john@doe.com", 2);
     ms.print();
+
+    LinkedList<Playlist *> playlists = ms.getSharedPlaylists("harry@smith.com");
+    std::cout << "pl size: " << playlists.getSize() << std::endl;
 
     std::cout << ">>>> Unshare Playlist with id 2\n";
     ms.unsharePlaylist("john@doe.com", 2);
@@ -216,8 +225,64 @@ void test_subscription() {
 }
 
 
+void test_case_7() {
+    print_begin_test("Case 7 : Default constructor; addProfile; addArtist/addAlbum/addSong; createPlaylist; addSongToPlaylist; print.");
+    MusicStream ms;
+
+    std::cout << ">>>> Adding users\n";
+    ms.addProfile("jack@sophia.com", "jack_sophia", free_of_charge);
+    ms.addProfile("archie@rosie.com", "archie_rosie", premium);
+    ms.addProfile("harry@isabella.com", "harry_isabella", free_of_charge);
+    ms.addProfile("oscar@lily.com", "oscar_lily", premium);
+    ms.addProfile("leo@ivy.com", "leo_ivy", free_of_charge);
+
+    std::cout << ">>>> Adding artist `The Beatles`\n";
+    ms.addArtist("The Beatles");
+
+    std::cout << ">>>> Adding 2 albums of `The Beatles`\n";
+    ms.addAlbum("Please Please Me", 1);
+    ms.addAlbum("A Hard Day's Knight", 1);
+
+    std::cout << ">>>> Adding 4 songs of `The Beatles`\n";
+    ms.addSong("I Saw Here Standing There", 175, 1);
+    ms.addSong("Do You Want to Know a Secret", 116, 1);
+    ms.addSong("Things We Said Today", 155, 2);
+    ms.addSong("You Can't Do That", 155, 2);
+
+    std::cout << ">>>> Creating a playlist named `John's Playlist`\n";
+    ms.createPlaylist("archie@rosie.com", "archie's favorites");
+    ms.createPlaylist("oscar@lily.com", "oscar's goat");
+    ms.createPlaylist("oscar@lily.com", "oscar's throwback playlist");
+
+    ms.print();
+
+    std::cout << ">>>> Adding song with id 2 to the playlist 3\n";
+    ms.addSongToPlaylist("archie@rosie.com", 2, 1);
+    ms.addSongToPlaylist("oscar@lily.com", 4, 2);
+    ms.addSongToPlaylist("archie@rosie.com", 3, 1);
+    ms.addSongToPlaylist("oscar@lily.com", 2, 3);
+
+    ms.sharePlaylist("archie@rosie.com", 1);
+    ms.sharePlaylist("oscar@lily.com", 2);
+    ms.print();
+
+    ms.followProfile("archie@rosie.com", "oscar@lily.com");
+    ms.followProfile("oscar@lily.com", "archie@rosie.com");
+    ms.followProfile("archie@rosie.com", "harry@isabella.com");
+    ms.followProfile("jack@sophia.com", "harry@isabella.com")
+
+    std::cout << "################################\n";
+    LinkedList<Playlist *> shareds = ms.getSharedPlaylists("archie@rosie.com");
+    shareds.print();
+    std::cout << "################################\n";
+    ms.print();
+
+    print_end_test();
+}
+
+
 int main() {
-    test_add_profile();
+    /*test_add_profile();
     test_follow_profile();  
     test_delete_profile();
     test_follow_delete_profile();  
@@ -225,7 +290,10 @@ int main() {
     test_add_song();
     test_playlist();
     test_share_playlist();
-    test_subscription();
+    test_subscription();*/
+
+    test_case_7();
+
 
     return 0;
 }

@@ -122,7 +122,7 @@ Node<T> *LinkedList<T>::getNode(const T &data) const {
 
 template<class T>
 Node<T> *LinkedList<T>::getNodeAtIndex(int index) const {
-    if (index >= size)
+    if (index >= size or index < 0)
         return NULL;
     Node<T> *current = head;
     int i = 0;

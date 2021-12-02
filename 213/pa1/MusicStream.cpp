@@ -65,17 +65,23 @@ void MusicStream::deleteProfile(const std::string &email) {
 
     Node<Profile *> *following;
     Node<Profile *> *follower;
+    Node<Playlist> *playlist;
 
-    // Make profile_to_be_deleted unfollow everyone 
+   // Make profile_to_be_deleted's followers unfollow this user
+    while (!profile_to_be_deleted->getFollowers().isEmpty()) {
+        follower = profile_to_be_deleted->getFollowers().getFirstNode();
+        follower->data->unfollowProfile(profile_to_be_deleted);;
+    }
+    
+    // Make profile_to_be_deleted unfollow everyone
     while (!profile_to_be_deleted->getFollowings().isEmpty()) {
         following = profile_to_be_deleted->getFollowings().getFirstNode();
         profile_to_be_deleted->unfollowProfile(following->data);
     }
 
-    // Make profile_to_be_deleted's followers unfollow this user
-    while (!profile_to_be_deleted->getFollowers().isEmpty()) {
-        follower = profile_to_be_deleted->getFollowers().getFirstNode();
-        follower->data->unfollowProfile(profile_to_be_deleted);
+    while (!profile_to_be_deleted->getPlaylists().isEmpty()) {
+        playlist = profile_to_be_deleted->getPlaylists().getFirstNode();
+        profile_to_be_deleted->deletePlaylist(playlist->data.getPlaylistId());
     }
 
     // Remove the profile from profiles
@@ -152,7 +158,8 @@ void MusicStream::addSongToPlaylist(const std::string &email, int songId, int pl
     if (user == NULL or song == NULL) 
         return;
     Playlist *playlist = user->getPlaylist(playlistId);
-    playlist->addSong(song);
+    if (playlist != NULL)
+        playlist->addSong(song);
 }
 
 void MusicStream::deleteSongFromPlaylist(const std::string &email, int songId, int playlistId) {
@@ -163,7 +170,8 @@ void MusicStream::deleteSongFromPlaylist(const std::string &email, int songId, i
         return;
 
     Playlist *playlist = user->getPlaylist(playlistId);
-    playlist->dropSong(song);
+    if (playlist != NULL)
+        playlist->dropSong(song);
 }
 
 LinkedList<Song *> MusicStream::playPlaylist(const std::string &email, Playlist *playlist) {
@@ -186,23 +194,24 @@ Playlist *MusicStream::getPlaylist(const std::string &email, int playlistId) {
 
 LinkedList<Playlist *> MusicStream::getSharedPlaylists(const std::string &email) {
     Profile *user = findUser(email);
-    if (user == NULL)
-        return LinkedList<Playlist *>();
-
-    if (user->getFollowings().getSize() == 0)
-        return LinkedList<Playlist *>();
-
-    Node<Profile *> *following = user->getFollowings().getFirstNode();
-
     LinkedList<Playlist *> shared_playlists;
-    
+
+    if (user == NULL)
+        return shared_playlists;
+    else if (user->getFollowings().isEmpty())
+        return shared_playlists;
+
+    Node<Profile *> *following = user->getFollowings().getFirstNode();    
     do {
         LinkedList<Playlist *> shared_playlist = user->getSharedPlaylists();
+        if (shared_playlist.isEmpty())
+            continue;
         Node<Playlist *> *current_pl = shared_playlist.getFirstNode();
         do {
             shared_playlists.insertAtTheEnd(current_pl->data);
             current_pl = current_pl->next;
         } while (current_pl != shared_playlist.getFirstNode());
+        following = following->next;
     } while (following != user->getFollowings().getFirstNode());
 
     return shared_playlists;
@@ -210,37 +219,32 @@ LinkedList<Playlist *> MusicStream::getSharedPlaylists(const std::string &email)
 
 void MusicStream::shufflePlaylist(const std::string &email, int playlistId, int seed) {
     Profile *user = findUser(email);
-    if (user == NULL)
-        return;
-    user->shufflePlaylist(playlistId, seed);
+    if (user != NULL)
+        user->shufflePlaylist(playlistId, seed);
 }
 
 void MusicStream::sharePlaylist(const std::string &email, int playlistId) {
     Profile *user = findUser(email);
-    if (user == NULL)
-        return;
-    user->sharePlaylist(playlistId);
+    if (user != NULL)
+        user->sharePlaylist(playlistId);
 }
 
 void MusicStream::unsharePlaylist(const std::string &email, int playlistId) {
     Profile *user = findUser(email);
-    if (user == NULL)
-        return;
-    user->unsharePlaylist(playlistId);
+    if (user != NULL)
+        user->unsharePlaylist(playlistId);
 }
 
 void MusicStream::subscribePremium(const std::string &email) {
     Profile *user = findUser(email);
-    if (user == NULL)
-        return;
-    user->setPlan(premium);
+    if (user != NULL)
+        user->setPlan(premium);
 }
 
 void MusicStream::unsubscribePremium(const std::string &email) {
     Profile *user = findUser(email);
-    if (user == NULL)
-        return;
-    user->setPlan(free_of_charge);
+    if (user != NULL)
+        user->setPlan(free_of_charge);
 }
 
 void MusicStream::print() const {

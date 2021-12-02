@@ -34,20 +34,19 @@ void Profile::setPlan(SubscriptionPlan plan) {
     this->plan = plan;
 }
 
-void Profile::followProfile(Profile *profile) {
-    // Add to current user's followings
-    following.insertAtTheEnd(profile);
-    
-    // Update `profile` followers as well
+void Profile::followProfile(Profile *profile) {    
+    // Update `profile` followers
     profile->getFollowers().insertAtTheEnd(this);
+
+    // Add to current user's followings as well
+    following.insertAtTheEnd(profile);
 }
 
 void Profile::unfollowProfile(Profile *profile) {
-    // Remove also from curret user's following 
-    following.removeNode(profile);
-    
     // Update `profile` followers
     profile->getFollowers().removeNode(this);
+    // Remove from current user's following
+    following.removeNode(profile);
 }
 
 void Profile::createPlaylist(const std::string &playlistName) {
@@ -57,32 +56,39 @@ void Profile::createPlaylist(const std::string &playlistName) {
 
 void Profile::deletePlaylist(int playlistId) {
     Playlist *selected_playlist = getPlaylist(playlistId);
-    playlists.removeNode(*selected_playlist);
+    if (selected_playlist != NULL)
+        playlists.removeNode(*selected_playlist);
 }
 
 void Profile::addSongToPlaylist(Song *song, int playlistId) {
     Playlist *selected_playlist = getPlaylist(playlistId);
-    selected_playlist->addSong(song);
+    if (selected_playlist != NULL)
+        selected_playlist->addSong(song);
 }
 
 void Profile::deleteSongFromPlaylist(Song *song, int playlistId) {
     Playlist *selected_playlist = getPlaylist(playlistId);
-    selected_playlist->dropSong(song);
+    if (selected_playlist != NULL)
+        selected_playlist->dropSong(song);
 }
 
 Playlist *Profile::getPlaylist(int playlistId) {
-    Node<Playlist> *current_pl = playlists.getFirstNode();
+    if (playlists.isEmpty()) 
+        return NULL;
+    Node<Playlist> *current_pl = playlists.getFirstNode();    
     do {
         if (current_pl->data.getPlaylistId() == playlistId)
-            break;
+            return &current_pl->data;
     } while (current_pl != playlists.getFirstNode());
-    return &current_pl->data;
+    return NULL;
 }
 
 LinkedList<Playlist *> Profile::getSharedPlaylists() {
     LinkedList<Playlist *> shared_playlist;
-    Node<Playlist> *current_pl = playlists.getFirstNode();
+    if (playlists.isEmpty())
+        return shared_playlist;
 
+    Node<Playlist> *current_pl = playlists.getFirstNode();
     do {
         if (current_pl->data.isShared()) 
             shared_playlist.insertAtTheEnd(&current_pl->data);
@@ -93,7 +99,8 @@ LinkedList<Playlist *> Profile::getSharedPlaylists() {
 
 void Profile::shufflePlaylist(int playlistId, int seed) {
     Node<Playlist> *selected_playlist = playlists.getFirstNode();
-    selected_playlist->data.shuffle(seed);
+    if (selected_playlist != NULL)
+        selected_playlist->data.shuffle(seed);
 }
 
 void Profile::sharePlaylist(int playlistId) {
