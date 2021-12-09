@@ -1,0 +1,12 @@
+{
+	"musicstream_testcase_6.out": "identical",
+	"musicstream_testcase_7.out": "https://www.diffchecker.com/kZRjbwqf",
+	"musicstream_testcase_8.out": "https://www.diffchecker.com/bVm6sk3E",
+	"musicstream_testcase_9.out": "https://www.diffchecker.com/fVxAHwAB",
+	"musicstream_testcase_10.out": "OK (failure)",
+	"musicstream_testcase_11.out": "identical",
+	"musicstream_testcase_12.out": "OK (failure)",
+	"musicstream_testcase_13.out": "identical",
+	"musicstream_testcase_14.out": "https://www.diffchecker.com/aWzDTtnq",
+	"musicstream_testcase_15.out": "OK (failure)",	
+}
