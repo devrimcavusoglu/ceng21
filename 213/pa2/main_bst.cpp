@@ -23,7 +23,7 @@ void test_case_3(BST<T> tree) {
 template <class T>
 void test_case_4(BST<T> &tree) {
     print_test_begin("Test insertion, deletion, printing..");
-    tree.insert(4.5);
+    tree.insert(4);
     tree.insert(2);
     tree.insert(6);
     tree.insert(1);
@@ -32,7 +32,7 @@ void test_case_4(BST<T> &tree) {
     tree.insert(7);
     tree.print(inorder);
     tree.removeAllNodes();
-    tree.print(inorder);
+    tree.print(postorder);
     print_test_end();
 }
 

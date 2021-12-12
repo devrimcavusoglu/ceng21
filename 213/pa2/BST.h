@@ -36,12 +36,17 @@ private: // YOU MAY ADD YOUR OWN UTILITY MEMBER FUNCTIONS HERE.
     bool isLeaf(BSTNode<T> *node);
     int height();
     int height(BSTNode<T> *node);
-    bool contains(BSTNode<T> *node, const T &data);
+    bool contains(BSTNode<T> *node, const T &data) const;
     void deleteNode(BSTNode<T> *node);
     void insert(BSTNode<T> *&node, const T &data);
     void remove(BSTNode<T> *node, const T &data);
     BSTNode<T> *search(BSTNode<T> *node, const T &data) const;
-    BSTNode<T> *minNode(BSTNode<T> *node);
+    BSTNode<T> *minNode(BSTNode<T> *node) const;
+    BSTNode<T> *minNode() const;
+    BSTNode<T> *maxNode(BSTNode<T> *node) const;
+    BSTNode<T> *maxNode() const;
+    BSTNode<T> *getParent(BSTNode<T> *node) const;
+    
 
 private: // DO NOT CHANGE THIS PART.
     BSTNode<T> *root;
@@ -75,7 +80,7 @@ int BST<T>::height(BSTNode<T> *node) {
 }
 
 template<class T>
-bool BST<T>::contains(BSTNode<T> *node, const T &data) {
+bool BST<T>::contains(BSTNode<T> *node, const T &data) const {
     if (node == NULL)
         return false;
     if (node->data == data)
@@ -90,8 +95,12 @@ void BST<T>::deleteNode(BSTNode<T> *node) {
         return;
     deleteNode(node->left);
     deleteNode(node->right);
-    delete node;
-    node = NULL;
+    if (node == root) {
+        delete node;
+        root = NULL;
+    }
+    else
+        delete node;
 }
 
 template<class T>
@@ -133,13 +142,49 @@ BSTNode<T> *BST<T>::search(BSTNode<T> *node, const T &data) const {
 }
 
 template<class T>
-BSTNode<T> *BST<T>::minNode(BSTNode<T> *node) {
+BSTNode<T> *BST<T>::minNode(BSTNode<T> *node) const {
     BSTNode<T> *current = node;
     while (current->left != NULL)
     {
         current = current->left;
     }
     return current;
+}
+
+template<class T>
+BSTNode<T> *BST<T>::minNode() const {
+    return minNode(root);
+}
+
+template<class T>
+BSTNode<T> *BST<T>::maxNode(BSTNode<T> *node) const {
+    BSTNode<T> *current = node;
+    while (current->right != NULL)
+    {
+        current = current->right;
+    }
+    return current;
+}
+
+template<class T>
+BSTNode<T> *BST<T>::maxNode() const {
+    return minNode(root);
+}
+
+template<class T>
+BSTNode<T> *BST<T>::getParent(BSTNode<T> *node) const {
+    if (node == NULL or node == root)
+        return NULL;
+    BSTNode<T> *parent = root;
+    while (true) {
+        if (parent->left == node or parent->right == node) 
+            break;
+        if (node->data < parent->data)
+            parent = parent->left;
+        else
+            parent = parent->right;
+    }
+    return parent;
 }
 
 // UDF END
@@ -186,7 +231,8 @@ void BST<T>::remove(const T &data) {
 
 template<class T>
 void BST<T>::removeAllNodes() {
-    deleteNode(root);
+    if (!isEmpty())
+        deleteNode(root);
 }
 
 template<class T>
@@ -196,22 +242,69 @@ BSTNode<T> *BST<T>::search(const T &data) const {
 
 template<class T>
 BSTNode<T> *BST<T>::getSuccessor(BSTNode<T> *node, TraversalPlan tp) const {
-    BSTNode<T> *successor = root;
+    if (node == NULL)
+        return NULL;
+
+    BSTNode<T> *parent = getParent(node);
     if (tp == inorder) {
+        /*
+        if right node exists
+            return min of root->right
+        else if node is max of root->right
+            return NULL
+        else
+            return parent
+        */
         if (node->right != NULL)
             return minNode(node->right);
-        while (successor != NULL) {
-            if (node->data < successor->data)
-                successor = successor->left;
-            else if (successor->data < node->data)
-                successor = successor->right;
-            else
-                break;
+        else if (node == maxNode(root->right))
+            return NULL;
+        else {
+            return parent;
         }
-        return successor;
     } else if (tp == preorder) {
-        return node->left;
+        /*
+        if left node exists, 
+            return left node.
+        else if right node exists
+            return right node.
+        else if node is max of root->left
+            return root->right
+        else if node is min of root->right
+            return NULL
+        else
+            return parent's right node.
+        */
+        if (node->left != NULL)
+            return node->left;
+        else if (node->right != NULL)
+            return node->right;
+        else if (node == maxNode(root->left))
+            return root->right;
+        else if (node == maxNode(root->right))
+            return NULL;
+        else {
+            
+            return parent->right;
+        }
     } else if (tp == postorder) {
+        /*
+        if node is root node
+            return NULL (stopping cond)
+        else if node is root->right
+            return root
+        else if node->parent->right exists
+            return min(node->parent->right)
+        else
+            return parent
+        */
+        if (node == root)
+            return NULL;
+        else if (parent->right != NULL and parent->right != node)
+            return minNode(parent->right);
+        else {
+            return parent;
+        }
         return node->right;
     }
     else
@@ -269,12 +362,16 @@ void BST<T>::print(TraversalPlan tp) const {
 template<class T>
 BST<T> &BST<T>::operator=(const BST<T> &rhs) {
     removeAllNodes();
+    std::cout << "###############################" << std::endl;
     if (rhs.isEmpty())
         return *this;
-
-    BSTNode<T> *rhs_current = rhs.getSuccessor(rhs.getRoot(), inorder);
+    
+    BSTNode<T> *rhs_current = rhs.getRoot();
+    std::cout << "rhs_current: " << rhs_current->data << std::endl;
     while (rhs_current != NULL) {
+        
         insert(rhs_current->data);
+        rhs_current = rhs.getSuccessor(rhs_current, preorder);
     }
     return *this;
 }

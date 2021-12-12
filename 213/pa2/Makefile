@@ -28,6 +28,9 @@ ars.o: AirlineReservationSystem.cpp AirlineReservationSystem.h Flight.cpp Flight
 	$(CC) $(CFLAGS) AirlineReservationSystem.cpp -o ars.o
 
 clean:
-	rm *o
-	rm bst
-	rm ars
+	del *.o
+	del bst.exe
+	del ars.exe
+
+new: clean
+	$(MAKE)
