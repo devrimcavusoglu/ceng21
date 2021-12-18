@@ -25,14 +25,15 @@ void test_case_4(BST<T> &tree) {
     print_test_begin("Test insertion, deletion, printing..");
     tree.insert(4);
     tree.insert(2);
-    tree.insert(6);
+    tree.insert(10);
     tree.insert(1);
     tree.insert(3);
+    tree.insert(6);
     tree.insert(5);
-    tree.insert(7);
+    tree.insert(8);
     tree.print(preorder);
     //tree.removeAllNodes();
-    //tree.print(postorder);
+    //tree.print(inorder);
     print_test_end();
 }
 
@@ -50,12 +51,12 @@ int main() {
 
     t2 = tree;
     std::cout << "Printing t2...\n";
-    t2.print(inorder);
-    std::cout << "Removing 4 and printing t2\n";
-    t2.remove(4);
-    t2.print(inorder);
+    t2.print(preorder);
+    std::cout << "Removing 10 and printing t2\n";
+    t2.remove(10);
+    t2.print(preorder);
     std::cout << "Printing tree..\n";
-    tree.print(inorder);
+    tree.print(preorder);
 
     return 0;
 }

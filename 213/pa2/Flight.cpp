@@ -48,11 +48,30 @@ void Flight::setCompleted(bool completed) {
 }
 
 bool Flight::addTicket(const Ticket &ticket) {
-    /* TODO */
+    if (isCompleted()) 
+        return false;
+    TicketType type = ticket.getTicketType();
+
+    int current_count = 0;
+    for (int i = 0; i < tickets.size(); i++) {
+        if (tickets[i].getTicketType() == type)
+            current_count++;
+    }
+
+    if (type == economy && current_count < economyCapacity)
+        tickets.push_back(ticket);
+    else if (type == business && current_count < businessCapacity)
+        tickets.push_back(ticket);
+    else
+        return false;
+
+    if (tickets.size() == economyCapacity + businessCapacity)
+        setCompleted(true);
+    return true;
 }
 
 bool Flight::operator<(const Flight &rhs) const {
-    /* TODO */
+    return this->flightCode < rhs.getFlightCode();
 }
 
 bool Flight::operator>(const Flight &rhs) const {

@@ -28,6 +28,7 @@ public: // DO NOT CHANGE THIS PART.
     void print() const;
 
 private: // YOU MAY ADD YOUR OWN UTILITY MEMBER FUNCTIONS HERE.
+    Flight *searchFlight(const std::string &flightCode);    
 
 private: // DO NOT CHANGE THIS PART.
     BST<Passenger> passengers;

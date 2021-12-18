@@ -105,6 +105,7 @@ void BST<T>::insert(BSTNode<T> *&node, const T &data) {
 
 template<class T>
 void BST<T>::remove(BSTNode<T> *&node, const T &data) {
+    //std::cout << "############\n";
     if (node == NULL or !contains(node, data))
         return;
     else if (node->data == data) {
@@ -133,14 +134,8 @@ void BST<T>::remove(BSTNode<T> *&node, const T &data) {
         }
         else {
             // Node has one child
-            BSTNode<T> *child = (node->left != NULL) ? node->left : node->right;
-            
-            if (parent == NULL) {
-                root = child;
-                delete node;
-                return;
-            }
-            else if (is_left_child)
+            BSTNode<T> *child = (node->left) ? node->left : node->right;
+            if (is_left_child)
                 parent->left = child;
             else
                 parent->right = child;
@@ -184,8 +179,7 @@ BSTNode<T> *BST<T>::minNode(BSTNode<T> *node) const {
     if (!node)
         return NULL;
     BSTNode<T> *current = node;
-    while (current->left != NULL)
-    {
+    while (current->left != NULL) {
         current = current->left;
     }
     return current;
@@ -201,8 +195,7 @@ BSTNode<T> *BST<T>::maxNode(BSTNode<T> *node) const {
     if (!node)
         return NULL;
     BSTNode<T> *current = node;
-    while (current->right != NULL)
-    {
+    while (current->right != NULL) {
         current = current->right;
     }
     return current;
@@ -210,7 +203,7 @@ BSTNode<T> *BST<T>::maxNode(BSTNode<T> *node) const {
 
 template<class T>
 BSTNode<T> *BST<T>::maxNode() const {
-    return minNode(root);
+    return maxNode(root);
 }
 
 template<class T>
@@ -288,6 +281,9 @@ BSTNode<T> *BST<T>::getSuccessor(BSTNode<T> *node, TraversalPlan tp) const {
         return NULL;
 
     BSTNode<T> *parent = getParent(node);
+    bool is_left_child;
+    if (parent != NULL) 
+        is_left_child = (parent->left == node) ? true : false;
     if (tp == inorder) {
         /*
         if right node exists
@@ -310,32 +306,44 @@ BSTNode<T> *BST<T>::getSuccessor(BSTNode<T> *node, TraversalPlan tp) const {
         }
     } else if (tp == preorder) {
         /*
-        if left node exists, 
-            return left node.
-        else if right node exists
-            return right node.
-        else if node is max of root->left
-            return root->right
-        else if node is min of root->right
-            return NULL
-        else
-            return parent's right node.
+        1. If left child of given node exists, then the left child is preorder 
+        successor.
+        2. If left child does not exist, however right child exists, then 
+        the preorder successor is the right child.
+        3. If left child and right child does not exist and given node is left 
+        child of its parent, then its sibling is its preorder successor.
+        4. If none of above conditions are satisfied (left child does not exist 
+        and given node is not left child of its parent), then we move up using 
+        parent pointers until one of the following happens. 
+            a. We reach root. In this case, preorder successor does not exist.
+            b. Current node (one of the ancestors of given node) is left child 
+            of its parent, in this case preorder successor is sibling of current 
+            node.
         */
-        std::cout << "1\n";
-        if (node == NULL)
+        if (!node) 
             return root;
-        else if (node->left != NULL)
+        else if (node->left) 
             return node->left;
-        else if (node->right != NULL)
+        else if (node->right) 
             return node->right;
-        else if (parent && parent->right)
-            return parent->right;
         else if (node == maxNode(root->left))
             return root->right;
-        else if (node == maxNode())
-            return NULL;
-        else
-            return NULL;
+        else if (is_left_child)
+            return parent->right;
+        else {
+            BSTNode<T> *ancestor = parent;
+            bool ancestor_is_left_child;
+            while (ancestor) {
+                BSTNode<T> *ancestor_parent = getParent(ancestor);
+                if (!ancestor_parent)
+                    return NULL; 
+                ancestor_is_left_child = (parent->left == node) ? true : false;
+                if (ancestor_is_left_child)
+                    return ancestor_parent->right;
+                ancestor = getParent(ancestor); 
+            }
+        }
+
     } else if (tp == postorder) {
         /*
         if node is root node
@@ -415,9 +423,8 @@ BST<T> &BST<T>::operator=(const BST<T> &rhs) {
     root = NULL;
     removeAllNodes();
     if (!rhs.isEmpty() or this != &rhs) {
-        BSTNode<T> *rhs_current = rhs.getRoot();
+        BSTNode<T> *rhs_current = rhs.getSuccessor(NULL, preorder);
         while (rhs_current != NULL) {
-            std::cout << rhs_current->data << " ###############\n";
             insert(rhs_current->data);
             rhs_current = rhs.getSuccessor(rhs_current, preorder);
         }
