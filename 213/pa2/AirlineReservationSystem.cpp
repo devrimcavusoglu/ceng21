@@ -1,8 +1,8 @@
 #include "AirlineReservationSystem.h"
 
 void AirlineReservationSystem::addPassenger(const std::string &firstname, const std::string &lastname) {
-    Passenger *p = new Passenger(firstname, lastname);
-    passengers.insert(*p);
+    Passenger p = Passenger(firstname, lastname);
+    passengers.insert(p);
 }
 
 Passenger *AirlineReservationSystem::searchPassenger(const std::string &firstname, const std::string &lastname) {
@@ -12,8 +12,8 @@ Passenger *AirlineReservationSystem::searchPassenger(const std::string &firstnam
 }
 
 void AirlineReservationSystem::addFlight(const std::string &flightCode, const std::string &departureTime, const std::string &arrivalTime, const std::string &departureCity, const std::string &arrivalCity, int economyCapacity, int businessCapacity) {
-    Flight *f = new Flight(flightCode, departureTime, arrivalTime, departureCity, arrivalCity, economyCapacity, businessCapacity);
-    flights.insert(*f);
+    Flight f = Flight(flightCode, departureTime, arrivalTime, departureCity, arrivalCity, economyCapacity, businessCapacity);
+    flights.insert(f);
 }
 
 std::vector<Flight *> AirlineReservationSystem::searchFlight(const std::string &departureCity, const std::string &arrivalCity) {
