@@ -23,14 +23,13 @@ void test_case_3(const BST<T> t) {
 template <class T>
 void test_case_4(BST<T> &tree) {
     print_test_begin("Test insertion, deletion, printing..");
-    tree.insert(4);
-    tree.insert(2);
     tree.insert(10);
-    tree.insert(1);
-    tree.insert(3);
-    tree.insert(6);
     tree.insert(5);
-    tree.insert(8);
+    tree.insert(7);
+    tree.insert(6);
+    tree.insert(15);
+    tree.insert(13);
+    tree.insert(14);
     tree.print(preorder);
     //tree.removeAllNodes();
     //tree.print(inorder);
@@ -47,7 +46,13 @@ int main() {
     //test_case_3(tree);
     test_case_4(tree);
 
-    BST<int> t2;
+    BSTNode<int> *init = tree.getSuccessor(NULL, inorder);
+    while (init) {
+        std::cout << "Tree inorder successor: " << init->data << std::endl;
+        init = tree.getSuccessor(init, inorder);
+    }
+
+    /*BST<int> t2;
 
     t2 = tree;
     std::cout << "Printing t2...\n";
@@ -57,6 +62,6 @@ int main() {
     t2.print(preorder);
     std::cout << "Printing tree..\n";
     tree.print(preorder);
-
+*/
     return 0;
 }
