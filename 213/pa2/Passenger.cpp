@@ -14,9 +14,7 @@ const std::string &Passenger::getLastname() const {
 }
 
 bool Passenger::operator<(const Passenger &rhs) const {
-    std::string fullname = firstname + " " + lastname;
-    std::string rhs_fullname = rhs.firstname + " " + rhs.lastname;
-    return fullname < rhs_fullname;
+    return lastname < rhs.lastname;
 }
 
 bool Passenger::operator>(const Passenger &rhs) const {

@@ -19,17 +19,18 @@ void AirlineReservationSystem::addFlight(const std::string &flightCode, const st
 std::vector<Flight *> AirlineReservationSystem::searchFlight(const std::string &departureCity, const std::string &arrivalCity) {
     std::vector<Flight *> selected_flights;
     BSTNode<Flight> *current = flights.getSuccessor(NULL, preorder);
-    while (current != NULL) {
+    while (current) {
         if (current->data.getDepartureCity() == departureCity && current->data.getArrivalCity() == arrivalCity) 
             selected_flights.push_back(&current->data);
+        current = flights.getSuccessor(current, preorder);
     }
     return selected_flights;
 }
 
 void AirlineReservationSystem::issueTicket(const std::string &firstname, const std::string &lastname, const std::string &flightCode, TicketType ticketType) {
+
     Passenger *p = searchPassenger(firstname, lastname);
     Flight *f = searchFlight(flightCode);
-
     if (!f or !p)
         return;
 
@@ -53,9 +54,20 @@ void AirlineReservationSystem::executeTheFlight(const std::string &flightCode) {
 
     if (!f or f->isCompleted())
         return;
-    Ticket t = freeTicketRequests.dequeue();
-    while (!f->isCompleted())
-        f->addTicket(t);
+
+    const int q_size = freeTicketRequests.size();
+    Ticket t;
+    bool ticket_added;
+    for (int i = 0; i < q_size; i++) {
+        t = freeTicketRequests.dequeue();
+        if (t.getFlight()->getFlightCode() == flightCode) {
+            ticket_added = f->addTicket(t);
+            if (!ticket_added)
+                freeTicketRequests.enqueue(t);    
+        }
+        else 
+            freeTicketRequests.enqueue(t);
+    }
 
     f->setCompleted(true);
 }
@@ -64,7 +76,8 @@ Flight *AirlineReservationSystem::searchFlight(const std::string &flightCode) {
     BSTNode<Flight> *current = flights.getSuccessor(NULL, preorder);
     while (current != NULL) {
         if (current->data.getFlightCode() == flightCode)
-            return &current->data;            
+            return &current->data;
+        current = flights.getSuccessor(current, preorder);         
     }
 }
 
