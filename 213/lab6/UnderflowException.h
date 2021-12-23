@@ -1,0 +1,10 @@
+// DO NOT MODIFY THIS FILE.
+
+#ifndef UNDERFLOWEXCEPTION_H
+#define UNDERFLOWEXCEPTION_H
+
+class UnderflowException {
+    
+};
+
+#endif //UNDERFLOWEXCEPTION_H
