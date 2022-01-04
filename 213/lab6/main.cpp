@@ -53,9 +53,12 @@ void test_changepriority(HeapPriorityQueue<int> heap, int old_val, int new_val) 
 
 
 int main() {
-    int size = 8;
+    int size = 13;
     //int numbers[] = {42, 17, 9, 42, 35, -1, 88};
-    int numbers[] = {3, 55, 18, 74, 91, 29, 62, 100};
+    //int numbers[] = {3, 55, 18, 74, 91, 29, 62, 100};
+    //int numbers[] = {12,29,70,30,39,84,91,55,64,40,99};
+    int numbers[] = {15,13,9,5,12,8,7,4,0,6,2,1,3};
+    //int numbers[] = {11,9,12,14,3,15,7,8,1};
 
     HeapPriorityQueue<int> heap;
     for (int i = 0; i < size; i++)
@@ -66,11 +69,15 @@ int main() {
         heap_consecutive.add(i);
 
 
-    test_descending(numbers, size);
+    heap.remove();
+    heap.print();
+
+
+    /*test_descending(numbers, size);
     test_kthsmallest(heap, 4);
     test_isconsecutive(heap);
     test_isconsecutive(heap_consecutive);
-    test_changepriority(heap, 62, -3);
+    test_changepriority(heap, 62, -3);*/
 
     return 0;
 }
