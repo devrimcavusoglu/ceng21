@@ -28,6 +28,9 @@ int main()
     g.ConnectVertices("A", "H", 7);
     g.ConnectVertices("A", "I", 8);
 
+    g.ModifyEdge("B", "C", 15);
+    g.ModifyEdge("A", "D", 2);
+
     g.PrintAll();
 
 

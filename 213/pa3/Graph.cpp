@@ -66,14 +66,6 @@ void Graph::printVertices() {
     std::cout << std::endl;
 }
 
-bool Graph::isInVertices(const std::string &vertexName) {
-    for (int i = 0; i < this->vertexList.size(); i++) {
-        if (this->vertexList[i].name == vertexName) 
-            return true;
-    }
-    return false;
-}
-
 GraphVertex *Graph::getVertex(const int &vertexId) {
     if (vertexId >= this->vertexList.size())
         return NULL;
@@ -125,11 +117,11 @@ int Graph::getEdgeId(const StringPair &vertexNames) {
 
 void Graph::InsertVertex(const std::string& vertexName)
 {
+    if (getVertex(vertexName))
+        throw DuplicateVertexNameException();
     GraphVertex v;
     v.name = vertexName;
     v.edgeCount = 0;
-    if (isInVertices(vertexName))
-        throw DuplicateVertexNameException();
     vertexList.push_back(v);
 }
 
@@ -137,7 +129,7 @@ bool Graph::ConnectVertices(const std::string& fromVertexName,
                             const std::string& toVertexName,
                             int weight)
 {
-    if (!isInVertices(fromVertexName) or !isInVertices(toVertexName)) 
+    if (!getVertex(fromVertexName) or !getVertex(toVertexName)) 
         throw VertexNotFoundException();
     else if (fromVertexName == toVertexName)
         return false;
@@ -168,7 +160,58 @@ bool Graph::ShortestPath(std::vector<int>& orderedVertexIdList,
                          const std::string& from,
                          const std::string& to) const
 {
-    // TODO
+    GraphVertex *v0 = this->getVertex(from);
+    GraphVertex *v1 = this->getVertex(to);
+
+    if (!v0 or !v1)
+        throw VertexNotFoundException();
+
+    int v0_id = this->getVertexId(from);
+    int v1_id = this->getVertexId(to);
+
+    // Initializing path table
+    std::vector<DistanceVertexIdPair> pathTable;
+    for (int i = 0; i < this->vertexList.size(); i++) {
+        if (i == v0_id)
+            DistanceVertexIdPair entry = DistanceVertexIdPair(-1, 0);
+        else 
+            DistanceVertexIdPair entry = DistanceVertexIdPair(-1, LARGE_NUMBER);
+        pathTable.push_back(entry);
+    }
+
+    std::priority_queue<DistanceVertexIdPair> pq;
+    DistanceVertexIdPair start = DistanceVertexIdPair(v0_id, 0);
+    pq.push(start);
+
+    while (!pq.empty()) {
+        int v_id = pq.pop();
+        GraphVertex *v = this->getVertex(v_id);
+        for (int i = 0; i < v->edgeCount; i++) {
+            GraphEdge *edge = this->getEdge(v->edgeIds[i]);
+            if (edge->masked)
+                continue;
+            int neighbor_id = (v_id != edge->vertexId0) ? edge->vertexId0 : edge->vertexId1;
+            DistanceVertexIdPair path_to_neighbor = DistanceVertexIdPair(v_id, edge->weight);
+            if (path_to_neighbor < pathTable[neighbor_id])
+                pathTable[neighbor_id] = path_to_neighbor;
+            DistanceVertexIdPair next = DistanceVertexIdPair(neighbor_id, edge->weight);
+            pq.push(next);
+            edge->masked = true;
+        }
+    }
+
+    int prev = v1_id;
+    while (prev != v0_id) {
+        if (prev == -1) {
+            orderedVertexIdList.clear();
+            return false;
+        }
+        orderedVertexIdList.insert(orderedVertexIdList.begin(), prev);
+        DistanceVertexIdPair path_to_prev = pathTable[prev];
+        prev = path_to_prev.vId;
+    }
+
+    return true;
 }
 
 int Graph::MultipleShortPaths(std::vector<std::vector<int> >& orderedVertexIdList,
@@ -226,11 +269,13 @@ void Graph::ModifyEdge(const std::string& vName0,
                        const std::string& vName1,
                        float newWeight)
 {
-    if (!isInVertices(vName0) or !isInVertices(vName1))
+    GraphVertex *v0 = this->getVertex(vName0);
+    GraphVertex *v1 = this->getVertex(vName1);
+    if (!v0 or !v1)
         throw VertexNotFoundException();
 
     GraphEdge *edge = this->getEdge(vName0, vName1);
-    if (edge)
+    if (edge != NULL)
         edge->weight = newWeight;
 }
 
@@ -243,7 +288,9 @@ void Graph::ModifyEdge(int vId0, int vId1,
     if (!v0 or !v1)
         throw VertexNotFoundException();
 
-    this->ModifyEdge(v0->name, v1->name, newWeight);
+    GraphEdge *edge = this->getEdge(v0->name, v1->name);
+    if (edge != NULL)
+        edge->weight = newWeight;
 }
 
 void Graph::PrintAll() const
