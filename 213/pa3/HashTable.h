@@ -29,6 +29,8 @@ class KeyedHashTable
         // Stores the first 100 primes
         static const int            PRIME_LIST[PRIME_TABLE_COUNT];
         static int                  FindNearestLargerPrime(int requestedCapacity);
+        // To be used for removal of keys in the KeyedHashTable
+        static const std::string    REMOVED_KEY;
 
         // Hash Table Storage
         HashData*                   table;
@@ -48,6 +50,14 @@ class KeyedHashTable
         // statements.
         friend class                PA3_HT_TEST_CASE;
         friend class                PA3_MAPS_TEST_CASE;
+
+        // UDF
+        // Returns whether if the hash table is full or not.
+        bool isFull() const;
+        // Returns the available index for given key. If fails to
+        // find an available slot or key exists then returns -1.
+        int get_available_id(const std::string& key) const;
+        HashData* get(const std::string& key);
 
     public:
         // Constructors & Destructor

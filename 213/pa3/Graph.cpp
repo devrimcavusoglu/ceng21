@@ -115,8 +115,7 @@ int Graph::getEdgeId(const StringPair &vertexNames) {
     return -1;
 }
 
-void Graph::InsertVertex(const std::string& vertexName)
-{
+void Graph::InsertVertex(const std::string& vertexName) {
     if (getVertex(vertexName))
         throw DuplicateVertexNameException();
     GraphVertex v;
@@ -127,8 +126,7 @@ void Graph::InsertVertex(const std::string& vertexName)
 
 bool Graph::ConnectVertices(const std::string& fromVertexName,
                             const std::string& toVertexName,
-                            int weight)
-{
+                            int weight) {
     if (!getVertex(fromVertexName) or !getVertex(toVertexName)) 
         throw VertexNotFoundException();
     else if (fromVertexName == toVertexName)
@@ -158,9 +156,8 @@ bool Graph::ConnectVertices(const std::string& fromVertexName,
 
 bool Graph::ShortestPath(std::vector<int>& orderedVertexIdList,
                          const std::string& from,
-                         const std::string& to) const
-{
-    GraphVertex *v0 = this->getVertex(from);
+                         const std::string& to) const {
+   /* GraphVertex *v0 = this->getVertex(from);
     GraphVertex *v1 = this->getVertex(to);
 
     if (!v0 or !v1)
@@ -211,7 +208,7 @@ bool Graph::ShortestPath(std::vector<int>& orderedVertexIdList,
         prev = path_to_prev.vId;
     }
 
-    return true;
+    return true;*/
 }
 
 int Graph::MultipleShortPaths(std::vector<std::vector<int> >& orderedVertexIdList,
