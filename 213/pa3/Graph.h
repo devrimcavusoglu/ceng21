@@ -220,12 +220,15 @@ class Graph
         void printVertices();
     private:
         bool isInVertices(const std::string &vertexName);
-        int getVertexId(const std::string &vertexName);
+        int getVertexId(const std::string &vertexName) const;
         int getEdgeId(const StringPair &vertexNames);
         GraphVertex *getVertex(const int &vertexId);
         GraphVertex *getVertex(const std::string &vertexName);
         GraphEdge *getEdge(const int &edgeId);
         GraphEdge *getEdge(const std::string &vertexName1, const std::string &vertexName2);
+        GraphEdge *getEdge(const int &vertexId1, const int &vertexId2);
+        GraphEdge getEdgeFromVertexIds(const int &vertexId1, const int &vertexId2);
+        std::vector<int> getNeighbors(const int &vertexId);
 };
 
 #endif //__GRAPH_H__

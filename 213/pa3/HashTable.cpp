@@ -54,7 +54,7 @@ void KeyedHashTable::ReHash() {
         aux[i] = this->table[i];
     }
 
-    int new_tableSize = this->FindNearestLargerPrime(old_tableSize);
+    int new_tableSize = this->FindNearestLargerPrime(old_tableSize*2);
     delete [] this->table;
     this->table = new HashData[new_tableSize]();
     this->tableSize = new_tableSize;
@@ -92,11 +92,24 @@ KeyedHashTable::KeyedHashTable(int requestedCapacity) {
 }
 
 KeyedHashTable::KeyedHashTable(const KeyedHashTable& other) {
+    this->tableSize = PRIME_LIST[0];
+    this->table = new HashData[this->tableSize]();
+    this->occupiedElementCount = 0;   
     *this = other;
 }
 
 KeyedHashTable& KeyedHashTable::operator=(const KeyedHashTable& other) {
-    // TODO
+    if (this != &other) {
+        delete [] this->table;
+        this->occupiedElementCount = other.occupiedElementCount;
+        this->tableSize = other.tableSize;
+        this->table = new HashData[this->tableSize]();
+        for (int i = 0; i<this->tableSize; i++) {
+            HashData entry = other.table[i];
+            this->table[i] = entry;
+        }
+    }
+    return *this;
 }
 
 KeyedHashTable::~KeyedHashTable() {
@@ -172,8 +185,6 @@ void KeyedHashTable::Print() const
     // This function is implemented  //
     // Do not edit this function !   //
     // ============================= //
-    std::cout << "Table size: " << this->tableSize << std::endl;
-    std::cout << "Number of elements: " << this->occupiedElementCount << std::endl;
     std::cout << "HT:";
     if(occupiedElementCount == 0)
     {

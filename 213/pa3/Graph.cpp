@@ -60,10 +60,15 @@ Graph::Graph(const std::string& filePath)
 }
 
 void Graph::printVertices() {
+    std::cout << "Printing vertices" << std::endl;
     for (int i = 0; i < this->vertexList.size(); i++) {
-        std::cout << this->vertexList[i].name << " ";
+        std::cout << this->vertexList[i].name << std::endl;
+        for (int j = 0; j < this->vertexList[i].edgeCount; j++) {
+            std::cout << this->vertexList[i].edgeIds[j] << " ";
+        }
+        std::cout << std::endl;
     }
-    std::cout << std::endl;
+    std::cout << "Printed vertices." << std::endl;
 }
 
 GraphVertex *Graph::getVertex(const int &vertexId) {
@@ -79,7 +84,7 @@ GraphVertex *Graph::getVertex(const std::string &vertexName) {
     return &vertexList[vertexId];
 }
 
-int Graph::getVertexId(const std::string &vertexName) {
+int Graph::getVertexId(const std::string &vertexName) const {
     for (int i = 0; i < this->vertexList.size(); i++) {
         if (this->vertexList[i].name == vertexName) 
             return i;
@@ -101,18 +106,53 @@ GraphEdge *Graph::getEdge(const std::string &vertexName0, const std::string &ver
     return this->getEdge(edge_id);
 }
 
-int Graph::getEdgeId(const StringPair &vertexNames) {
+GraphEdge *Graph::getEdge(const int &vertexId1, const int &vertexId2) {
     for (int i = 0; i < this->edgeList.size(); i++) {
-        int v0 = this->edgeList[i].vertexId0;
-        int v1 = this->edgeList[i].vertexId1;
-        int v0_id = this->getVertexId(vertexNames.s0);
-        int v1_id = this->getVertexId(vertexNames.s1);
-        if (v0 == v0_id or v0 == v1_id) {
-            if (v1 == v0_id or v1 == v1_id)
+        int v1 = this->edgeList[i].vertexId0;
+        int v2 = this->edgeList[i].vertexId1;
+        if (v1 == vertexId1 or v1 == vertexId2) {
+            if (v2 == vertexId1 or v2 == vertexId2)
+                return this->getEdge(i);
+        }
+    }
+    return NULL;
+}
+
+GraphEdge Graph::getEdgeFromVertexIds(const int &vertexId1, const int &vertexId2) {
+    GraphEdge result;
+    for (int i = 0; i < this->edgeList.size(); i++) {
+        int v1 = this->edgeList[i].vertexId0;
+        int v2 = this->edgeList[i].vertexId1;
+        if (v1 == vertexId1 or v1 == vertexId2) {
+            if (v2 == vertexId1 or v2 == vertexId2)
+                result = this->edgeList[i];
+        }
+    }
+    return result;
+}
+
+int Graph::getEdgeId(const StringPair &vertexNames) {
+    int v1_id = this->getVertexId(vertexNames.s0);
+    int v2_id = this->getVertexId(vertexNames.s1);
+    for (int i = 0; i < this->edgeList.size(); i++) {
+        int v1 = this->edgeList[i].vertexId0;
+        int v2 = this->edgeList[i].vertexId1;
+        if (v1 == v1_id or v1 == v2_id) {
+            if (v2 == v1_id or v2 == v2_id)
                 return i;
         }
     }
     return -1;
+}
+
+std::vector<int> Graph::getNeighbors(const int &vertexId) {
+    if (vertexId == -1)
+        throw VertexNotFoundException();
+    std::vector<int> result;
+    GraphVertex *vertex = this->getVertex(vertexId);
+    for (int i = 0; i < vertex->edgeCount; i++)
+        result.push_back(vertex->edgeIds[i]);
+    return result;
 }
 
 void Graph::InsertVertex(const std::string& vertexName) {
@@ -157,58 +197,58 @@ bool Graph::ConnectVertices(const std::string& fromVertexName,
 bool Graph::ShortestPath(std::vector<int>& orderedVertexIdList,
                          const std::string& from,
                          const std::string& to) const {
-   /* GraphVertex *v0 = this->getVertex(from);
-    GraphVertex *v1 = this->getVertex(to);
+    int source_id = this->getVertexId(from);
+    int target_id = this->getVertexId(to);
 
-    if (!v0 or !v1)
+    if (source_id == -1 or target_id == -1)
         throw VertexNotFoundException();
 
-    int v0_id = this->getVertexId(from);
-    int v1_id = this->getVertexId(to);
-
-    // Initializing path table
-    std::vector<DistanceVertexIdPair> pathTable;
-    for (int i = 0; i < this->vertexList.size(); i++) {
-        if (i == v0_id)
-            DistanceVertexIdPair entry = DistanceVertexIdPair(-1, 0);
-        else 
-            DistanceVertexIdPair entry = DistanceVertexIdPair(-1, LARGE_NUMBER);
-        pathTable.push_back(entry);
-    }
-
+    // Initializing path table & pq
     std::priority_queue<DistanceVertexIdPair> pq;
-    DistanceVertexIdPair start = DistanceVertexIdPair(v0_id, 0);
-    pq.push(start);
+    DistanceVertexIdPair start_entry = DistanceVertexIdPair(source_id, 0);
+    pq.push(start_entry);
+
+    std::vector<int> dist;
+    std::vector<int> prev;
+    std::vector<bool> visited;
+
+    for (int i = 0; i < this->vertexList.size(); i++) {
+        if (i == source_id) 
+            dist.push_back(0);
+        else 
+            dist.push_back(LARGE_NUMBER);
+        visited.push_back(false);
+        prev.push_back(-1);
+    }
 
     while (!pq.empty()) {
-        int v_id = pq.pop();
-        GraphVertex *v = this->getVertex(v_id);
-        for (int i = 0; i < v->edgeCount; i++) {
-            GraphEdge *edge = this->getEdge(v->edgeIds[i]);
-            if (edge->masked)
+        DistanceVertexIdPair dv_pair = pq.top(); pq.pop();
+        int u_id = dv_pair.vId;
+        GraphVertex u = this->vertexList[u_id];
+        for (int e = 0; e < u.edgeCount; e++) {
+            int e_id = u.edgeIds[e];
+            GraphEdge edge = this->edgeList[e_id];
+            int v_id = (edge.vertexId0 == u_id) ? edge.vertexId1 : edge.vertexId0;
+            if (visited[v_id] or edge.masked) 
                 continue;
-            int neighbor_id = (v_id != edge->vertexId0) ? edge->vertexId0 : edge->vertexId1;
-            DistanceVertexIdPair path_to_neighbor = DistanceVertexIdPair(v_id, edge->weight);
-            if (path_to_neighbor < pathTable[neighbor_id])
-                pathTable[neighbor_id] = path_to_neighbor;
-            DistanceVertexIdPair next = DistanceVertexIdPair(neighbor_id, edge->weight);
-            pq.push(next);
-            edge->masked = true;
+            int alt = dist[u_id] + edge.weight;
+            if (alt < dist[v_id]) {
+                dist[v_id] = alt;
+                prev[v_id] = u_id;
+                DistanceVertexIdPair entry = DistanceVertexIdPair(v_id, alt);
+                pq.push(entry);
+            }
         }
+        visited[u_id] = true;
     }
 
-    int prev = v1_id;
-    while (prev != v0_id) {
-        if (prev == -1) {
-            orderedVertexIdList.clear();
-            return false;
-        }
-        orderedVertexIdList.insert(orderedVertexIdList.begin(), prev);
-        DistanceVertexIdPair path_to_prev = pathTable[prev];
-        prev = path_to_prev.vId;
+    int prev_vertex_id = target_id;
+    while (prev_vertex_id != -1) {
+        orderedVertexIdList.insert(orderedVertexIdList.begin(), prev_vertex_id);
+        prev_vertex_id = prev[prev_vertex_id];
     }
 
-    return true;*/
+    return true;
 }
 
 int Graph::MultipleShortPaths(std::vector<std::vector<int> >& orderedVertexIdList,

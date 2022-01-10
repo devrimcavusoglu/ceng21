@@ -17,31 +17,22 @@ int main()
     g.InsertVertex("I");
     g.InsertVertex("J");
 
-    g.printVertices();
 
     g.ConnectVertices("A", "B", 1);
-    g.ConnectVertices("A", "C", 2);
-    g.ConnectVertices("A", "D", 3);
-    g.ConnectVertices("A", "E", 4);
-    g.ConnectVertices("A", "F", 5);
-    g.ConnectVertices("A", "G", 6);
-    g.ConnectVertices("A", "H", 7);
-    g.ConnectVertices("A", "I", 8);
+    g.ConnectVertices("A", "C", 3);
+    g.ConnectVertices("B", "C", 1);
+    g.ConnectVertices("B", "D", 2);
+    g.ConnectVertices("C", "D", 5);
+    g.ConnectVertices("C", "E", 1);
+    g.ConnectVertices("D", "E", 3);
 
-    g.ModifyEdge("B", "C", 15);
-    g.ModifyEdge("A", "D", 2);
-
+    //g.printVertices();
     g.PrintAll();
 
-
-    try
-    {
-        g.ConnectVertices("A", "J", 9);
+    std::vector<int> result;
+    g.ShortestPath(result, "B", "E");
+    for (int i = 0; i < result.size(); i++) {
+        std::cout << result[i] << " ";
     }
-    catch(const TooManyEdgeOnVertexExecption& e)
-    {
-        std::cout << e.what() << '\n';
-    }
-    return 0;
-
+    std::cout << std::endl;
 }
