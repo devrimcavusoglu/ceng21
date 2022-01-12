@@ -478,14 +478,16 @@ std::string Graph::VertexName(int vertexId) const
 
 int Graph::TotalWeightInBetween(std::vector<int>& orderedVertexIdList)
 {
+    if (orderedVertexIdList.size() == 0)
+        return 0;
+
     int total = 0;
-    
     for(int i = 0; i < orderedVertexIdList.size()-1; i++) {
         int id0 = orderedVertexIdList[i];
         int id1 = orderedVertexIdList[i+1];
+
         GraphVertex *v0 = this->getVertex(id0);
         GraphVertex *v1 = this->getVertex(id1);
-
         GraphEdge* edge = this->getEdge(v0->name, v1->name);
         total += edge->weight;
     }

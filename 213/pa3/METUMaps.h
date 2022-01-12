@@ -61,5 +61,8 @@ class METUMaps
         // Functions that will be called during journey
         void            UpdateLocation(const std::string& name);
         void            Display();
+    
+    private:
+        int LocationId(const std::string &name);
 };
 #endif // __METU_MAPS_H__

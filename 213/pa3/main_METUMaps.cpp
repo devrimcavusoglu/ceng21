@@ -6,17 +6,21 @@ int main()
     METUMaps maps(2, "metu_campus.map");
 
     // Set Proper Locations
-    maps.SetStartingLocation("Ceng");
-    maps.SetDestination("Library");
+    maps.SetStartingLocation("A4_Gate");
+    maps.SetDestination("A7_Gate");
     maps.StartJourney();
     std::cout << "================" << std::endl;
     maps.Display();
     std::cout << "================" << std::endl;
-    maps.UpdateLocation("EE");
+    maps.UpdateLocation("C_Statue");
     std::cout << "================" << std::endl;
     maps.Display();
     std::cout << "================" << std::endl;
-    maps.UpdateLocation("Library");
+    maps.UpdateLocation("Tekno_A8");
+    std::cout << "================" << std::endl;
+    maps.Display();
+    std::cout << "================" << std::endl;
+    maps.UpdateLocation("A7_Gate");
     maps.EndJourney();
 
     // ======================== //
