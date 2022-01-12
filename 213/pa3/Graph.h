@@ -221,7 +221,8 @@ class Graph
     private:
         bool isInVertices(const std::string &vertexName);
         int getVertexId(const std::string &vertexName) const;
-        int getEdgeId(const StringPair &vertexNames);
+        int getEdgeId(const StringPair &vertexNames) const;
+        int getEdgeId(const int &vertexId1, const int &vertexId2) const;
         GraphVertex *getVertex(const int &vertexId);
         GraphVertex *getVertex(const std::string &vertexName);
         GraphEdge *getEdge(const int &edgeId);

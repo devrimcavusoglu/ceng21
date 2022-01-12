@@ -131,18 +131,22 @@ GraphEdge Graph::getEdgeFromVertexIds(const int &vertexId1, const int &vertexId2
     return result;
 }
 
-int Graph::getEdgeId(const StringPair &vertexNames) {
-    int v1_id = this->getVertexId(vertexNames.s0);
-    int v2_id = this->getVertexId(vertexNames.s1);
+int Graph::getEdgeId(const int &vertexId1, const int &vertexId2) const {
     for (int i = 0; i < this->edgeList.size(); i++) {
         int v1 = this->edgeList[i].vertexId0;
         int v2 = this->edgeList[i].vertexId1;
-        if (v1 == v1_id or v1 == v2_id) {
-            if (v2 == v1_id or v2 == v2_id)
+        if (v1 == vertexId1 or v1 == vertexId2) {
+            if (v2 == vertexId1 or v2 == vertexId2)
                 return i;
         }
     }
     return -1;
+}
+
+int Graph::getEdgeId(const StringPair &vertexNames) const {
+    int v1_id = this->getVertexId(vertexNames.s0);
+    int v2_id = this->getVertexId(vertexNames.s1);
+    return this->getEdgeId(v1_id, v2_id);
 }
 
 std::vector<int> Graph::getNeighbors(const int &vertexId) {
@@ -256,7 +260,36 @@ int Graph::MultipleShortPaths(std::vector<std::vector<int> >& orderedVertexIdLis
                               const std::string& to,
                               int numberOfShortestPaths)
 {
-    // TODO
+    this->UnMaskAllEdges();
+    bool shortest_path_exists;
+    std::vector<std::vector<int> > n_shortest_paths;
+    std::vector<int> current_shortest_path;
+    shortest_path_exists = this->ShortestPath(current_shortest_path, from, to);
+
+    int i = 0;
+    do {
+        orderedVertexIdList.push_back(current_shortest_path);
+        // Mask the highest weighted edge on the last found path
+        std::pair<int, int> highest_weighted_edge(-1, 0);
+        for (int j = 0; j < current_shortest_path.size() - 1; j++) {
+            int u_id = current_shortest_path[j];
+            int v_id = current_shortest_path[j+1];
+            int e_id = this->getEdgeId(u_id, v_id);
+            int current_weight = this->edgeList[e_id].weight;
+            if (highest_weighted_edge.second < current_weight) {
+                highest_weighted_edge.first = e_id;
+                highest_weighted_edge.second = current_weight;
+            }
+        }
+        this->edgeList[highest_weighted_edge.first].masked = true;
+
+        current_shortest_path.clear();
+        bool sp_exists = this->ShortestPath(current_shortest_path, from, to);
+        i++;
+    } while (i < numberOfShortestPaths && shortest_path_exists);
+
+    this->UnMaskAllEdges();
+    return orderedVertexIdList.size();
 }
 
 void Graph::MaskEdges(const std::vector<StringPair>& vertexNames)

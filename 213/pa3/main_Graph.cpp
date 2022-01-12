@@ -2,9 +2,17 @@
 #include "GraphExceptions.h"
 #include <iostream>
 
-int main()
-{
-    Graph g;
+
+void print_test_begin(std::string test_name) {
+    std::cout << "#### TEST " << test_name << " BEGIN ####\n";
+}
+
+void print_test_end() {
+    std::cout << "############### TEST END ###############\n";
+}
+
+void test_insert_vertices(Graph &g) {
+    print_test_begin("insert vertices");
 
     g.InsertVertex("A");
     g.InsertVertex("B");
@@ -16,8 +24,13 @@ int main()
     g.InsertVertex("H");
     g.InsertVertex("I");
     g.InsertVertex("J");
+    g.printVertices();
 
+    print_test_end();
+}
 
+void test_connect_vertices(Graph &g) {
+    print_test_begin("connect vertices");
     g.ConnectVertices("A", "B", 1);
     g.ConnectVertices("A", "C", 3);
     g.ConnectVertices("B", "C", 1);
@@ -26,13 +39,45 @@ int main()
     g.ConnectVertices("C", "E", 1);
     g.ConnectVertices("D", "E", 3);
 
-    //g.printVertices();
+    g.ConnectVertices("B", "F", 3);
+    g.ConnectVertices("F", "G", 1);
+    g.ConnectVertices("G", "E", 2);
     g.PrintAll();
+    print_test_end();
+}
 
+void test_shortest_path(Graph &g) {
+    print_test_begin("shortest path");
     std::vector<int> result;
     g.ShortestPath(result, "B", "E");
-    for (int i = 0; i < result.size(); i++) {
-        std::cout << result[i] << " ";
-    }
+    for (int i = 0; i < result.size(); i++) 
+            std::cout << result[i] << " ";
     std::cout << std::endl;
+    print_test_end();
+}
+
+
+void test_multiple_shortest_path(Graph &g) {
+    print_test_begin("multiple shortest paths");
+    std::vector<std::vector<int> > result;
+    g.MultipleShortPaths(result, "B", "E", 3);
+    for (int i = 0; i < result.size(); i++) {
+        std::vector<int> current_path = result[i];
+        std::cout << "Path " << i << std::endl;
+        for (int j = 0; j < current_path.size(); j++)
+            std::cout << current_path[j] << " ";
+        std::cout << std::endl;
+    }
+    print_test_end();
+}
+
+int main()
+{
+    Graph g;
+
+    test_insert_vertices(g);
+    test_connect_vertices(g);
+    test_shortest_path(g);
+    test_multiple_shortest_path(g);
+    
 }
