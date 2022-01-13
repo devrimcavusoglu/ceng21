@@ -98,6 +98,7 @@ void METUMaps::StartJourney() {
         return;
     }
 
+    this->PrintCalculatingRoutes(this->startingLoc, this->destination);
     int start_id = this->LocationId(this->startingLoc);
     int target_id = this->LocationId(this->destination);
 
@@ -106,7 +107,6 @@ void METUMaps::StartJourney() {
         return;
     }
 
-    this->PrintCalculatingRoutes(this->startingLoc, this->destination);
     // Compute n = potentialPathCount shortest paths.
     std::vector<std::vector<int> > shortest_paths;
     map.MultipleShortPaths(
@@ -161,6 +161,7 @@ void METUMaps::UpdateLocation(const std::string& name) {
         return;
     }
 
+    
     int start_id = this->LocationId(this->startingLoc);
     int target_id = this->LocationId(this->destination);
 

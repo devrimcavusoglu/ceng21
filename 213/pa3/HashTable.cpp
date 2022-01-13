@@ -220,16 +220,17 @@ int KeyedHashTable::get_available_id(const std::string &key) const {
 
     // If table is not full (which is handled above)
     // it should always be returning an available spot.
-    int id = this->Hash(key);
+    int original_id = this->Hash(key);
+    int probe_id;
     int p = 0;
     while (true) {
-        id = (id + p*p) % tableSize;
-        HashData data = table[id];
+        probe_id = (original_id + p*p) % tableSize;
+        HashData data = table[probe_id];
         if (data.key.empty() or data.key == REMOVED_KEY)
             break; 
         p++;
     }
-    return id;
+    return probe_id;
 }
 
 HashData* KeyedHashTable::get(const std::string& key) {
