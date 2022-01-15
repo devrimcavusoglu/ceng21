@@ -265,10 +265,10 @@ int Graph::MultipleShortPaths(std::vector<std::vector<int> >& orderedVertexIdLis
     std::vector<std::vector<int> > n_shortest_paths;
     std::vector<int> current_shortest_path;
     shortest_path_exists = this->ShortestPath(current_shortest_path, from, to);
+    orderedVertexIdList.push_back(current_shortest_path);
 
-    int i = 0;
-    do {
-        orderedVertexIdList.push_back(current_shortest_path);
+    int i = 1;
+    while (i < numberOfShortestPaths && shortest_path_exists) {
         // Mask the highest weighted edge on the last found path
         std::pair<int, int> highest_weighted_edge(-1, 0);
         for (int j = 0; j < current_shortest_path.size() - 1; j++) {
@@ -284,9 +284,10 @@ int Graph::MultipleShortPaths(std::vector<std::vector<int> >& orderedVertexIdLis
         this->edgeList[highest_weighted_edge.first].masked = true;
 
         current_shortest_path.clear();
-        bool sp_exists = this->ShortestPath(current_shortest_path, from, to);
+        shortest_path_exists = this->ShortestPath(current_shortest_path, from, to);
+        orderedVertexIdList.push_back(current_shortest_path);
         i++;
-    } while (i < numberOfShortestPaths && shortest_path_exists);
+    }
 
     this->UnMaskAllEdges();
     return orderedVertexIdList.size();
@@ -355,12 +356,11 @@ void Graph::ModifyEdge(int vId0, int vId1,
     GraphVertex *v0 = this->getVertex(vId0);
     GraphVertex *v1 = this->getVertex(vId1);
 
-    if (!v0 or !v1)
-        throw VertexNotFoundException();
-
-    GraphEdge *edge = this->getEdge(v0->name, v1->name);
-    if (edge != NULL)
-        edge->weight = newWeight;
+    if (v0 and v1) {
+        GraphEdge *edge = this->getEdge(v0->name, v1->name);
+        if (edge != NULL)
+            edge->weight = newWeight;
+    }
 }
 
 void Graph::PrintAll() const

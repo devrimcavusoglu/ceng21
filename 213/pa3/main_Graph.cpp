@@ -56,6 +56,22 @@ void test_shortest_path(Graph &g) {
     print_test_end();
 }
 
+void test_modify_nonexisting_edge(Graph &g) {
+    print_test_begin("modify nonexisting edge");
+    std::cout << "Modify (A,B) as 3 from 1.\n";
+    g.ModifyEdge("A", "B", 3);
+    std::cout << "Modify (A,E) as 5 (non-existing edge).\n";
+    g.ModifyEdge("A", "E", 5);
+    std::cout << "Modify (X,Y) as 5 (non-existing edge & non-existing vertices).\n";
+    try {
+        g.ModifyEdge("X", "Y", 5);
+    }
+    catch (std::runtime_error& exception) {
+        std::cout << exception.what() << std::endl;
+    }
+    print_test_end();
+}
+
 
 void test_multiple_shortest_path(Graph &g) {
     print_test_begin("multiple shortest paths");
@@ -71,6 +87,7 @@ void test_multiple_shortest_path(Graph &g) {
     print_test_end();
 }
 
+
 int main()
 {
     Graph g;
@@ -78,6 +95,7 @@ int main()
     test_insert_vertices(g);
     test_connect_vertices(g);
     test_shortest_path(g);
+    test_modify_nonexisting_edge(g);
     test_multiple_shortest_path(g);
     
 }
