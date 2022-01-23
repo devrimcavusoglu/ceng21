@@ -17,7 +17,7 @@ def bellman_ford(g: Graph, source: str, target: str = None):
     :param target: target vertex name.
     :return: list of vertices constructing the path from source to target.
     """
-    def _init(n: int, s: int) -> np.ndarray:
+    def initialize(n: int, s: int) -> np.ndarray:
         table = np.zeros((n, 2))
         table[:, 0] = np.inf
         table[:, 1] = -1
@@ -34,7 +34,7 @@ def bellman_ford(g: Graph, source: str, target: str = None):
             table[v, 1] = u
 
     source_id = g.get_vertex_id(source)
-    table = _init(len(g), source_id)
+    table = initialize(len(g), source_id)
 
     for vertex in g.vertex_list:
         for edge in g.get_edges(vertex.name):
@@ -49,6 +49,7 @@ def bellman_ford(g: Graph, source: str, target: str = None):
     while prev != -1:
         path.insert(0, g.get_vertex_name(prev))
         prev = int(table[prev, 1])
+    print(f"Shortest path from '{source}' to '{target}':", table[target_id, 0])
     return path
 
 

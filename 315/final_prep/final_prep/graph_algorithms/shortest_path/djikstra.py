@@ -25,7 +25,7 @@ def djikstra(g: Graph, source: str, target: str = None):
     :param target: target vertex name.
     :return: list of vertices constructing the path from source to target.
     """
-    def _init(n: int, s: int) -> np.ndarray:
+    def initialize(n: int, s: int) -> np.ndarray:
         table = np.zeros((n, 2))
         table[:, 0] = np.inf
         table[:, 1] = -1
@@ -42,11 +42,11 @@ def djikstra(g: Graph, source: str, target: str = None):
             table[v, 1] = u
         return d_v
 
-    source = g.get_vertex(source)
-    table = _init(len(g), source.id)
+    source_vertex = g.get_vertex(source)
+    table = initialize(len(g), source_vertex.id)
 
     heap = queue.PriorityQueue(maxsize=len(g))
-    heap.put(DistanceVertexPair(distance=0, vertex=source))
+    heap.put(DistanceVertexPair(distance=0, vertex=source_vertex))
 
     while not heap.empty():
         dvpair = heap.get()
@@ -67,6 +67,7 @@ def djikstra(g: Graph, source: str, target: str = None):
     while prev != -1:
         path.insert(0, g.get_vertex_name(prev))
         prev = int(table[prev, 1])
+    print(f"Shortest path from '{source}' to '{target}':", table[target_id, 0])
     return path
 
 
