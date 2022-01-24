@@ -36,7 +36,7 @@ def bellman_ford(g: Graph, source: str, target: str = None):
     source_id = g.get_vertex_id(source)
     table = initialize(len(g), source_id)
 
-    for vertex in g.vertex_list:
+    for vertex in g.vertices:
         for edge in g.get_edges(vertex.name):
             relax(edge, vertex.id, table)
 

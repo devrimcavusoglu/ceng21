@@ -27,7 +27,7 @@ def floyd_warshall(g: Graph, source: str = None, target: str = None):
         prevs = - np.ones((n, n))
         table[:, :] = np.inf
         np.fill_diagonal(table, 0)
-        for edges in g.adjacency_list:
+        for edges in g.adjacency_map:
             for edge in edges:
                 table[edge.v1_id, edge.v2_id] = edge.weight
                 prevs[edge.v1_id, edge.v2_id] = edge.v1_id
