@@ -10,8 +10,8 @@ import pandas as pd
 
 @dataclass
 class Vertex:
-	name: str = None
-	id: int = None
+	name: str
+	id: int
 	marked: bool = False
 
 	def __eq__(self, other):
@@ -20,10 +20,10 @@ class Vertex:
 
 @dataclass
 class Edge:
-	v1_id: int = None
-	v2_id: int = None
-	weight: float = None
-	id: int = None
+	v1_id: int
+	v2_id: int
+	weight: float
+	id: int
 
 	def __eq__(self, other):
 		return self.id == other.id
@@ -33,13 +33,21 @@ class Edge:
 
 
 class Graph:
+	"""Generic (Undirected) Graph"""
 	def __init__(self):
 		self._adjacency_map: Dict[int, List[int]] = {}
 		self._vertices: Dict[int, Vertex] = {}
 		self._vertex_name_to_id: Dict[str, int] = {}
 		self._edges: Dict[int, Edge] = {}
-		self.__vid: int = 0
-		self.__eid: int = 0
+		self._vid: int = 0
+		self._eid: int = 0
+
+	def __contains__(self, item):
+		return self.contains_vertex(item)
+
+	def __iter__(self) -> Vertex:
+		for vertex in self._vertices.values():
+			yield vertex
 
 	def __len__(self):
 		return len(self._vertices)
@@ -52,23 +60,83 @@ class Graph:
 	def vertices(self):
 		return self._vertices
 
-	@property
-	def _vid(self):
-		self.__vid += 1
-		return deepcopy(self.__vid - 1)
+	def _next_vid(self):
+		current_id = deepcopy(self._vid)
+		self._vid += 1
+		return current_id
 
-	@property
-	def _eid(self):
-		self.__eid += 1
-		return deepcopy(self.__eid - 1)
+	def _next_eid(self):
+		current_id = deepcopy(self._eid)
+		self._eid += 1
+		return current_id
+
+	@classmethod
+	def from_array(cls, array: np.ndarray) -> "Graph":
+		G = cls()
+		vertices = np.unique(array[:, [0, 1]]).tolist()
+		for vertex in vertices:
+			G.add_vertex(vertex)
+
+		for edge in array:
+			v1, v2, w = edge
+			G.add_edge(v1, v2, w)
+
+		return G
+
+	@classmethod
+	def from_file(cls, path: str) -> "Graph":
+		df = pd.read_csv(path, sep=" ", header=None)
+		return cls.from_array(array=df.to_numpy())
+
+	def _BFS(self, s: Vertex, q: queue.Queue, visit_func: Callable = None):
+		"""Breadth-First Search on the graph."""
+		q.put(s)
+		while not q.empty():
+			v = q.get()
+			if visit_func:
+				visit_func(v)
+			else:
+				print(v.name, end=" ")
+			self.mark_vertex(v.name)
+			neighbors = self.get_neighbors(v.name)
+			for neighbor in neighbors:
+				if not neighbor.marked and neighbor not in q.queue:
+					q.put(neighbor)
+
+		if not self.is_all_vertices_marked():
+			# We need to check if there are any nodes possibly disconnected
+			# from some SCC set, i.e make sure traversed all vertices.
+			return self._BFS(self.get_unmarked_vertex(), q, visit_func)
+
+	def _DFS(self, v: Vertex, visit_func: Callable = None):
+		"""Depth-First Search on the graph."""
+		if visit_func:
+			visit_func(v)
+		else:
+			print(v.name, end=" ")
+		self.mark_vertex(v.name)
+		for neighbor in self.get_neighbors(v.name):
+			if not neighbor.marked:
+				self._DFS(neighbor, visit_func)
+
+		if not self.is_all_vertices_marked():
+			# We need to check if there are any nodes possibly disconnected
+			# from some SCC set, i.e make sure traversed all vertices.
+			return self._DFS(self.get_unmarked_vertex(), visit_func)
 
 	def _create_vertex(self, name: str) -> Vertex:
 		if not name:
 			raise ValueError("'name' cannot be empty or None.")
-		return Vertex(name=name, id=self._vid)
+		return Vertex(name=name, id=self._next_vid())
 
 	def _create_edge(self, v1_id: int, v2_id: int, weight: float):
-		return Edge(v1_id=v1_id, v2_id=v2_id, weight=weight, id=self._eid)
+		return Edge(v1_id=v1_id, v2_id=v2_id, weight=weight, id=self._next_eid())
+
+	def contains_vertex(self, name: str):
+		return self.get_vertex(name) is not None
+
+	def contains_edge(self, v1_name: str, v2_name: str):
+		return self.get_edge(v1_name, v2_name) is not None
 
 	def get_vertex_id(self, name: str) -> int:
 		return self._vertex_name_to_id.get(name)
@@ -126,33 +194,6 @@ class Graph:
 			self._edges.pop(edge.id)
 			self._adjacency_map[neighbor_id].remove(edge.id)
 
-	@classmethod
-	def from_array(cls, array: np.ndarray) -> "Graph":
-		G = cls()
-		vertices = np.unique(array[:, [0, 1]]).tolist()
-		for vertex in vertices:
-			G.add_vertex(vertex)
-
-		for edge in array:
-			v1, v2, w = edge
-			G.add_edge(v1, v2, w)
-
-		return G
-
-	@classmethod
-	def from_file(cls, path: str) -> "Graph":
-		df = pd.read_csv(path, sep=" ", header=None)
-		return cls.from_array(array=df.to_numpy())
-
-	def print(self):
-		print("Printing graph..")
-		for vertex in self._vertices.values():
-			print(f"{vertex.name} -->")
-			for edge_id in self._adjacency_map[vertex.id]:
-				edge = self.get_edge(edge_id)
-				connected_vertex_id = edge.v1_id if vertex.id != edge.v1_id else edge.v2_id
-				print(f"--> {self.get_vertex_name(connected_vertex_id)} w={edge.weight}")
-
 	def get_edges(self, name: str) -> List[Edge]:
 		v_id = self.get_vertex_id(name)
 		return [self.get_edge(e_id) for e_id in self._adjacency_map[v_id]]
@@ -173,6 +214,12 @@ class Graph:
 		for vertex in self._vertices.values():
 			vertex.marked = False
 
+	def modify_edge(self, v1_name: str, v2_name: str, new_weight: float) -> None:
+		if not self.contains_edge(v1_name, v2_name):
+			raise ValueError(f"Edge ('{v1_name}', '{v2_name}') does not exists.")
+		edge = self.get_edge(v1_name, v2_name)
+		edge.weight = new_weight
+
 	def is_all_vertices_marked(self):
 		return all([v.marked for v in self._vertices.values()])
 
@@ -180,25 +227,6 @@ class Graph:
 		for v in self._vertices.values():
 			if not v.marked:
 				return v
-
-	def _BFS(self, s: Vertex, q: queue.Queue, visit_func: Callable = None):
-		q.put(s)
-		while not q.empty():
-			v = q.get()
-			if visit_func:
-				visit_func(v)
-			else:
-				print(v.name, end=" ")
-			self.mark_vertex(v.name)
-			neighbors = self.get_neighbors(v.name)
-			for neighbor in neighbors:
-				if not neighbor.marked and neighbor not in q.queue:
-					q.put(neighbor)
-
-		if not self.is_all_vertices_marked():
-			# We need to check if there are any nodes possibly disconnected
-			# from some SCC set.
-			return self._BFS(self.get_unmarked_vertex(), q, visit_func)
 
 	def BFS(self, s: str, visit_func: Callable = None):
 		s = self.get_vertex_id(s)
@@ -210,22 +238,6 @@ class Graph:
 		print("\nBFS completed.")
 		self.unmark_all_vertices()
 
-	def _DFS(self, v: Vertex, visit_func: Callable = None):
-		"""Depth-First Search on the graph."""
-		if visit_func:
-			visit_func(v)
-		else:
-			print(v.name, end=" ")
-		self.mark_vertex(v.name)
-		for neighbor in self.get_neighbors(v.name):
-			if not neighbor.marked:
-				self._DFS(neighbor, visit_func)
-
-		if not self.is_all_vertices_marked():
-			# We need to check if there are any nodes possibly disconnected
-			# from some SCC set.
-			return self._DFS(self.get_unmarked_vertex(), visit_func)
-
 	def DFS(self, s: str, visit_func: Callable = None):
 		s = self.get_vertex_id(s)
 		s = self._vertices[s]
@@ -235,8 +247,19 @@ class Graph:
 		print("\nDFS completed.")
 		self.unmark_all_vertices()
 
+	def print(self):
+		print("Printing graph..")
+		for vertex in self._vertices.values():
+			print(f"{vertex.name} -->")
+			for edge_id in self._adjacency_map[vertex.id]:
+				edge = self.get_edge(edge_id)
+				connected_vertex_id = edge.v1_id if vertex.id != edge.v1_id else edge.v2_id
+				print(f"--> {self.get_vertex_name(connected_vertex_id)} w={edge.weight}")
+
 
 class DiGraph(Graph):
+	"""Directed Graph"""
+
 	def add_edge(self, v1_name: str, v2_name: str, weight: float):
 		v1_id = self.get_vertex_id(v1_name)
 		v2_id = self.get_vertex_id(v2_name)
@@ -259,6 +282,18 @@ class DiGraph(Graph):
 				if how in ["incoming", "all"] and v1_id	== edge.v2_id:
 					self._edges.pop(edge.id)
 					self._adjacency_map[edge.v1_id].remove(edge.id)
+
+	def get_edge(self, v1_id_or_name: Union[str, int], v2_id_or_name: Union[str, int] = None) -> Edge:
+		if v2_id_or_name is None:
+			# If only first argument passed, assumes it's an edge id.
+			return self._edges[v1_id_or_name]
+		v1_id = v1_id_or_name if isinstance(v1_id_or_name, int) else self.get_vertex_id(v1_id_or_name)
+		v2_id = v2_id_or_name if isinstance(v2_id_or_name, int) else self.get_vertex_id(v2_id_or_name)
+
+		for e_id, edge in self._edges.items():
+			# We now look for exact match unlike the parent method.
+			if (edge.v1_id, edge.v2_id) == (v1_id, v2_id):
+				return edge
 
 
 if __name__ == "__main__":
