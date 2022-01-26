@@ -88,15 +88,13 @@ class Graph:
 		df = pd.read_csv(path, sep=" ", header=None)
 		return cls.from_array(array=df.to_numpy())
 
-	def _BFS(self, s: Vertex, q: queue.Queue, visit_func: Callable = None):
+	def _BFS(self, s: Vertex, q: queue.Queue, visit_func: Callable = None, out: List = None):
 		"""Breadth-First Search on the graph."""
 		q.put(s)
 		while not q.empty():
 			v = q.get()
-			if visit_func:
-				visit_func(v)
-			else:
-				print(v.name, end=" ")
+			if out is not None:
+				out.append(v)
 			self.mark_vertex(v.name)
 			neighbors = self.get_neighbors(v.name)
 			for neighbor in neighbors:
@@ -106,23 +104,21 @@ class Graph:
 		if not self.is_all_vertices_marked():
 			# We need to check if there are any nodes possibly disconnected
 			# from some SCC set, i.e make sure traversed all vertices.
-			return self._BFS(self.get_unmarked_vertex(), q, visit_func)
+			return self._BFS(self.get_unmarked_vertex(), q, visit_func, out)
 
-	def _DFS(self, v: Vertex, visit_func: Callable = None):
+	def _DFS(self, v: Vertex, visit_func: Callable = None, out: List = None):
 		"""Depth-First Search on the graph."""
-		if visit_func:
-			visit_func(v)
-		else:
-			print(v.name, end=" ")
+		if out is not None:
+			out.append(v)
 		self.mark_vertex(v.name)
 		for neighbor in self.get_neighbors(v.name):
 			if not neighbor.marked:
-				self._DFS(neighbor, visit_func)
+				self._DFS(neighbor, visit_func, out)
 
 		if not self.is_all_vertices_marked():
 			# We need to check if there are any nodes possibly disconnected
 			# from some SCC set, i.e make sure traversed all vertices.
-			return self._DFS(self.get_unmarked_vertex(), visit_func)
+			return self._DFS(self.get_unmarked_vertex(), visit_func, out)
 
 	def _create_vertex(self, name: str) -> Vertex:
 		if not name:
@@ -234,18 +230,22 @@ class Graph:
 
 		self.unmark_all_vertices()
 		q = queue.Queue(maxsize=len(self))
-		self._BFS(s, q, visit_func)
-		print("\nBFS completed.")
+		out = []
+		self._BFS(s, q, visit_func, out=out)
 		self.unmark_all_vertices()
+		for node in out:
+			yield node
 
 	def DFS(self, s: str, visit_func: Callable = None):
 		s = self.get_vertex_id(s)
 		s = self._vertices[s]
 
 		self.unmark_all_vertices()
-		self._DFS(s, visit_func)
-		print("\nDFS completed.")
+		out = []
+		self._DFS(s, out=out)
 		self.unmark_all_vertices()
+		for node in out:
+			yield node
 
 	def print(self):
 		print("Printing graph..")

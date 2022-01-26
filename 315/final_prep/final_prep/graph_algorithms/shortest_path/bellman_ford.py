@@ -1,6 +1,6 @@
 import numpy as np
 
-from data_structures.graph import Graph, Edge, DiGraph
+from final_prep.data_structures.graph import Graph, Edge
 
 
 def bellman_ford(g: Graph, source: str, target: str = None):
@@ -36,7 +36,7 @@ def bellman_ford(g: Graph, source: str, target: str = None):
     source_id = g.get_vertex_id(source)
     table = initialize(len(g), source_id)
 
-    for vertex in g.vertices:
+    for vertex in g:
         for edge in g.get_edges(vertex.name):
             relax(edge, vertex.id, table)
 
@@ -55,6 +55,6 @@ def bellman_ford(g: Graph, source: str, target: str = None):
 
 if __name__ == "__main__":
     fp = "C:\\Users\\devri\\lab\\projects\\ceng21\\315\\final_prep\\example_graph.csv"
-    g = DiGraph.from_file(fp)
+    g = Graph.from_file(fp)
     table = bellman_ford(g, "A", "F")
     print(table)

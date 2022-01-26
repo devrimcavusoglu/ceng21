@@ -2,7 +2,7 @@ from typing import Tuple
 
 import numpy as np
 
-from data_structures.graph import Graph, Edge, DiGraph
+from final_prep.data_structures.graph import Graph, DiGraph
 
 
 def floyd_warshall(g: Graph, source: str = None, target: str = None):
@@ -27,8 +27,9 @@ def floyd_warshall(g: Graph, source: str = None, target: str = None):
         prevs = - np.ones((n, n))
         table[:, :] = np.inf
         np.fill_diagonal(table, 0)
-        for edges in g.adjacency_map:
-            for edge in edges:
+        for _, edges in g.adjacency_map.items():
+            for edge_id in edges:
+                edge = g.get_edge(edge_id)
                 table[edge.v1_id, edge.v2_id] = edge.weight
                 prevs[edge.v1_id, edge.v2_id] = edge.v1_id
                 if not isinstance(g, DiGraph):
