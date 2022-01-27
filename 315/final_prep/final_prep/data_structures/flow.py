@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Union, Dict
+from typing import Union, Dict, List
 
 import numpy as np
 import pandas as pd
@@ -24,6 +24,7 @@ class FlowNetwork(DiGraph):
         super().__init__()
         self._vertices: Dict[int, NetworkNode] = {}
         self._vertex_name_to_id: Dict[str, int] = {}
+        self._edges: Dict[int, NetworkEdge] = {}
         self._flow = 0
         self._vid = 2
         if init_source_and_sink:
@@ -133,8 +134,6 @@ class FlowNetwork(DiGraph):
         e = self._create_edge(v1.id, v2.id, weight)
         self._edges[e.id] = e
         self._adjacency_map[v1.id].append(e.id)
-        v1.outgoing_flow += weight
-        v2.incoming_flow += weight
 
     def modify_edge(self, v1_id_or_name: Union[int, str], v2_id_or_name: Union[int, str], new_weight: float = None,
                     new_flow: float = None):
@@ -144,33 +143,55 @@ class FlowNetwork(DiGraph):
         if new_flow is not None:
             edge.flow = new_flow
 
+    def put_flow(self, edge_id: int, flow: float):
+        edge = self.get_edge(edge_id)
+        if flow > edge.weight:
+            raise ValueError("Given edge capacity is less than the given flow.")
+        edge.flow = flow
+        v1 = self.get_vertex(edge.v1_id)
+        v2 = self.get_vertex(edge.v2_id)
+        v1.outgoing_flow += flow
+        v2.incoming_flow += flow
 
 @dataclass
 class ResidualNetworkEdge(NetworkEdge):
     reverse_edge_id: int = -1
+    is_reverse: bool = False
 
 
 class ResidualNetwork(DiGraph):
-    def _create_edge(self, v1_id: int, v2_id: int, weight: float) -> ResidualNetworkEdge:
-        return ResidualNetworkEdge(v1_id=v1_id, v2_id=v2_id, weight=weight, id=self._next_eid())
+
+    def __init__(self):
+        super().__init__()
+        self._edges: Dict[int, ResidualNetworkEdge] = {}
+
+    def _create_edge(self, v1_id: int, v2_id: int, weight: float, is_reverse: bool = False) -> ResidualNetworkEdge:
+        if is_reverse:
+            return ResidualNetworkEdge(v1_id=v1_id, v2_id=v2_id, weight=0, id=self._next_eid(), flow=0, is_reverse=is_reverse)
+        return ResidualNetworkEdge(v1_id=v1_id, v2_id=v2_id, weight=weight, id=self._next_eid(), flow=0, is_reverse=is_reverse)
+
+    def add_edge(self, v1_name: str, v2_name: str, weight: float, is_reverse: bool = False):
+        v1_id = self.get_vertex_id(v1_name)
+        v2_id = self.get_vertex_id(v2_name)
+        e = self._create_edge(v1_id, v2_id, weight, is_reverse)
+        self._edges[e.id] = e
+        self._adjacency_map[v1_id].append(e.id)
 
     @classmethod
     def from_flow_network(cls, network: FlowNetwork):
         G_f = cls()
         # Add nodes
-        for node in network:
+        for _, node in sorted(network.vertices.items(), key=lambda x: x[1].id):
             G_f.add_vertex(node.name)
 
         # Add edges
-        for node in network:
+        for node in G_f:
             for edge in network.get_edges(node.name):
-                if edge.weight == 0:
-                    continue
                 v1_name = G_f.get_vertex_name(edge.v1_id)
                 v2_name = G_f.get_vertex_name(edge.v2_id)
                 G_f.add_edge(v1_name, v2_name, edge.weight)
                 # add reverse edge with the same capacity
-                G_f.add_edge(v2_name, v1_name, edge.weight)
+                G_f.add_edge(v2_name, v1_name, edge.weight, is_reverse=True)
                 edge = G_f.get_edge(v1_name, v2_name)
                 reverse_edge = G_f.get_edge(v2_name, v1_name)
                 edge.reverse_edge_id = reverse_edge.id
@@ -180,13 +201,17 @@ class ResidualNetwork(DiGraph):
 
 if __name__ == "__main__":
     fp = "C:\\Users\\devri\\lab\\projects\\ceng21\\315\\final_prep\\example_flow.csv"
-    g = FlowNetwork.from_file(fp, source="A", sink="G")
-    dg = g.as_digraph()
-    dg.print()
+    network = FlowNetwork.from_file(fp, source="S", sink="T")
+    G_f = ResidualNetwork.from_flow_network(network)
+    G_f.print()
 
-    print("Valid:", g.is_valid())
-    for node in g:
+    print("Initial network")
+    print("Valid:", network.is_valid())
+    print("Putting flow through on edge (1) with flow = 3")
+    network.put_flow(1, 3)
+    print("Valid:", network.is_valid())
+    for node in network:
         print("name:", node.name, "incoming:", node.incoming_flow, "outgoing:", node.outgoing_flow)
 
-    g.BFS("A")
-    print("Flow:", g.flow)
+    network.BFS("A")
+    print("Flow:", network.flow)

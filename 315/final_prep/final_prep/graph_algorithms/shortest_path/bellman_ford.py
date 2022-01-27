@@ -12,10 +12,13 @@ def bellman_ford(g: Graph, source: str, target: str = None):
     # If it's a Digraph, then need to explicitly check whether the graph contains
     # a negative cycle or not.
 
-    :param g: (Graph) Graph object.
-    :param source: source vertex name.
-    :param target: target vertex name.
-    :return: list of vertices constructing the path from source to target.
+    Args:
+        g: (Graph) Graph object.
+        source: (str) source vertex name.
+        target: (str) target vertex name.
+
+    Returns:
+        List of vertices constructing the path from source to target.
     """
     def initialize(n: int, s: int) -> np.ndarray:
         table = np.zeros((n, 2))

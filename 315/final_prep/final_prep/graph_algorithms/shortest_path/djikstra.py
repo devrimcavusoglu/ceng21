@@ -20,10 +20,13 @@ def djikstra(g: Graph, source: str, target: str = None):
     """
     Applies Djisktra's algorithm to find shortest path.
 
-    :param g: (Graph) Graph object.
-    :param source: source vertex name.
-    :param target: target vertex name.
-    :return: list of vertices constructing the path from source to target.
+    Args:
+        g: (Graph) Graph object.
+        source: (str) source vertex name.
+        target: (str) target vertex name.
+
+    Returns:
+        List of vertices constructing the path from source to target.
     """
     def initialize(n: int, s: int) -> np.ndarray:
         table = np.zeros((n, 2))
