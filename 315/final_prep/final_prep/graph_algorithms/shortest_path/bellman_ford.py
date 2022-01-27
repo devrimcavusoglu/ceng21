@@ -12,6 +12,8 @@ def bellman_ford(g: Graph, source: str, target: str = None):
     # If it's a Digraph, then need to explicitly check whether the graph contains
     # a negative cycle or not.
 
+    Worst-case: O(VE)
+
     Args:
         g: (Graph) Graph object.
         source: (str) source vertex name.

@@ -20,6 +20,11 @@ def djikstra(g: Graph, source: str, target: str = None):
     """
     Applies Djisktra's algorithm to find shortest path.
 
+    Worst-case:
+        - O((V+E)logV) using min-heap
+        - O(VlogV + E) using Fibonacci heap
+        - O(V^2) using array
+
     Args:
         g: (Graph) Graph object.
         source: (str) source vertex name.
