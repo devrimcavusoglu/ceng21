@@ -7,11 +7,27 @@ Problem definition: Given two iterable objects S_1 & S_2, we try
 Example:
     S_1 = "aabacba"
     S_2 = "baacab"
-    LCS = "bacb" | "aaca" | "aacb"
+    LCS = "bacb" | "aaca" | "aacb" | "aaab"
 """
 from typing import List
 
 import numpy as np
+
+
+def construct_subsequence(cache: np.ndarray):
+    m, n = cache.shape
+    m -= 1
+    n -= 1
+    s = []
+    while m > 0:
+        while n > 0:
+            if cache[m, n] > cache[m, n-1]:
+                s.insert(0, n)
+                m -= 1
+            n -= 1
+        m -= 1
+
+    return s
 
 
 def lcs_tabulation(s1: str, s2: str, out: List = None, cache=None):
@@ -27,6 +43,11 @@ def lcs_tabulation(s1: str, s2: str, out: List = None, cache=None):
                 cache[i+1, j+1] = cache[i, j] + 1
             else:
                 cache[i+1, j+1] = max(cache[i+1, j], cache[i, j+1])
+
+    if out is not None:
+        indices = construct_subsequence(cache)
+        for idx in indices:
+            out.append(s2[idx])
 
     return cache[m, n]
 
