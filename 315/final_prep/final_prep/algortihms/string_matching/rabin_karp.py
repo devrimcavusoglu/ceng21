@@ -29,6 +29,7 @@ class RollingHash:
         self._hash_value = initial_hash_value
         self._mod = mod_value or fermat_prime(4)
         self._hash_factor = hash_factor or window_size
+        self._delete_factor = self._hash_factor ** (self.window_size-1)  # Precomputing deletion factor
 
     def get(self):
         return self._hash_value
@@ -50,7 +51,7 @@ class RollingHash:
         return self.get()
 
     def update_hash(self, old_value: str, new_value: str):
-        self._hash_value = self._hash_value - self._hash_factor ** (self.window_size-1) * ord(old_value) % self._mod
+        self._hash_value = self._hash_value - self._delete_factor * ord(old_value) % self._mod
         self._hash_value = ord(new_value) + self._hash_factor * self._hash_value % self._mod
         if self._hash_value < 0:
             self._hash_value += self._mod
@@ -67,8 +68,9 @@ def rabin_karp(text: str, pattern: str, base: int = None, q: int = None) -> List
     https://en.wikipedia.org/wiki/Rabin%E2%80%93Karp_algorithm
 
     Worst-case:
-        - O(n) if hashing is performed in O(1) time.
-        - O(nm) if hashing is performed in O(m) time.
+        - O((n-m+1)m) assuming every shift has collision.
+        - Practically speaking; O(n) if hashing is performed in O(1) time.
+        - Practically speaking; O(mn) if hashing is performed in O(m) time.
 
     Args:
         text: (str) Input text to be searched.
