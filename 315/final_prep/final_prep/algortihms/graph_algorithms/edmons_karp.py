@@ -9,7 +9,9 @@ from final_prep.data_structures.flow import FlowNetwork, ResidualNetwork
 def edmonds_karp(network: FlowNetwork) -> float:
     """
     Implementation of Edmonds-Karp algorithm to find the maximum
-    flow in the graph. You can see the algorithm and the pseudo-code
+    flow in the graph. Edmonds-Karp algorithm is an application of
+    Ford-Fulkerson method using BFS to find an augmenting path.
+    You can see the algorithm and the pseudo-code
     in detail via the following URL.
     https://en.wikipedia.org/wiki/Edmonds%E2%80%93Karp_algorithm
 

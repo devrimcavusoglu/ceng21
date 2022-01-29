@@ -39,7 +39,7 @@ if __name__ == "__main__":
     import time
 
     # 0 1 1 2 3 5
-    n = 35
+    n = 100
     print(f"Finding {n}th Fibonacci number..")
 
     print("Method: memoization")
