@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, List
 
 import numpy as np
 
@@ -45,8 +45,16 @@ def floyd_warshall(g: Graph, source: str = None, target: str = None):
             table[i, j] = table[i, k] + table[k, j]
             prevs[i, j] = k
 
+    def path_from_table(prevs: np.ndarray) -> List[str]:
+        target_id = g.get_vertex_id(target)
+        prev = target_id
+        path = []
+        while prev != -1:
+            path.insert(0, g.get_vertex_name(prev))
+            prev = int(prevs[source_id, prev])
+        return path
+
     source_id = g.get_vertex_id(source)
-    target_id = g.get_vertex_id(target)
 
     table, prevs = initialize(g)
     for k in range(len(g)):
@@ -59,17 +67,13 @@ def floyd_warshall(g: Graph, source: str = None, target: str = None):
     elif source and not target:
         return table[source_id, :]
 
-    prev = target_id
-    path = []
-    while prev != -1:
-        path.insert(0, g.get_vertex_name(prev))
-        prev = int(prevs[source_id, prev])
-    print(f"Shortest path from '{source}' to '{target}':", table[source_id, target_id])
-    return path
+    path = path_from_table(prevs)
+    distance = table[g.get_vertex_id(target), 0]
+    return distance, path
 
 
 if __name__ == "__main__":
     fp = "C:\\Users\\devri\\lab\\projects\\ceng21\\315\\final_prep\\example_graph.csv"
     g = Graph.from_file(fp)
-    path = floyd_warshall(g, "A", "F")
-    print(path)
+    distance, path = floyd_warshall(g, "A", "J")
+    print("Distance:", distance, " | path:", path)

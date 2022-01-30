@@ -24,6 +24,7 @@ class Edge:
 	v2_id: int
 	weight: float
 	id: int
+	marked: bool = False
 
 	def __eq__(self, other):
 		return self.id == other.id
@@ -52,6 +53,13 @@ class Graph:
 	def __len__(self):
 		return len(self._vertices)
 
+	def __getitem__(self, item: int):
+		return self.get_vertex(item)
+
+	def iter_edges(self):
+		for edge in self._edges.values():
+			yield edge
+
 	@property
 	def adjacency_map(self):
 		return self._adjacency_map
@@ -69,6 +77,21 @@ class Graph:
 		current_id = deepcopy(self._eid)
 		self._eid += 1
 		return current_id
+
+	@classmethod
+	def from_graph(cls, g: "Graph", init_weight: float = None) -> "Graph":
+		G = cls()
+		for vertex in g:
+			G.add_vertex(vertex.name)
+
+		for vertex in g:
+			for edge in g.get_edges(vertex.name):
+				dest_id = edge.complementary(vertex.id)
+				dest_node = g.get_vertex(dest_id)
+				if not G.contains_edge(vertex.name, dest_node.name):
+					weight = init_weight or edge.weight
+					G.add_edge(vertex.name, dest_node.name, weight)
+		return G
 
 	@classmethod
 	def from_array(cls, array: np.ndarray) -> "Graph":
@@ -128,6 +151,41 @@ class Graph:
 	def _create_edge(self, v1_id: int, v2_id: int, weight: float):
 		return Edge(v1_id=v1_id, v2_id=v2_id, weight=weight, id=self._next_eid())
 
+	def add_vertex(self, name: str) -> None:
+		v = self._create_vertex(name)
+		self._vertices[v.id] = v
+		self._vertex_name_to_id[name] = v.id
+		self._adjacency_map[v.id] = []
+
+	def add_edge(self, v1_name: str, v2_name: str, weight: float):
+		if self.contains_edge(v1_name, v2_name):
+			return
+		v1_id = self.get_vertex_id(v1_name)
+		v2_id = self.get_vertex_id(v2_name)
+		e = self._create_edge(v1_id, v2_id, weight)
+		self._edges[e.id] = e
+		self._adjacency_map[v1_id].append(e.id)
+		self._adjacency_map[v2_id].append(e.id)
+
+	def delete_vertex(self, name: str):
+		v_id = self._vertex_name_to_id.get(name)
+		self.delete_edge(name)
+		self._vertex_name_to_id.pop(name)
+		self._vertices.pop(v_id)
+		self._adjacency_map.pop(v_id)
+
+	def delete_edge(self, v1_name: str, v2_name: str = None):
+		v1_id = self.get_vertex_id(v1_name)
+		if v2_name is not None:
+			neighbors = [self.get_vertex_id(v2_name)]
+		else:
+			neighbors = [v.id for v in self.get_neighbors(v1_name)]
+
+		for neighbor_id in neighbors:
+			edge = self.get_edge(v1_id, neighbor_id)
+			self._edges.pop(edge.id)
+			self._adjacency_map[neighbor_id].remove(edge.id)
+
 	def contains_vertex(self, name: str):
 		return self.get_vertex(name) is not None
 
@@ -157,39 +215,6 @@ class Graph:
 			if {edge.v1_id, edge.v2_id} == {v1_id, v2_id}:
 				return edge
 
-	def add_vertex(self, name: str) -> None:
-		v = self._create_vertex(name)
-		self._vertices[v.id] = v
-		self._vertex_name_to_id[name] = v.id
-		self._adjacency_map[v.id] = []
-
-	def add_edge(self, v1_name: str, v2_name: str, weight: float):
-		v1_id = self.get_vertex_id(v1_name)
-		v2_id = self.get_vertex_id(v2_name)
-		e = self._create_edge(v1_id, v2_id, weight)
-		self._edges[e.id] = e
-		self._adjacency_map[v1_id].append(e.id)
-		self._adjacency_map[v2_id].append(e.id)
-
-	def delete_vertex(self, name: str):
-		v_id = self._vertex_name_to_id.get(name)
-		self.delete_edge(name)
-		self._vertex_name_to_id.pop(name)
-		self._vertices.pop(v_id)
-		self._adjacency_map.pop(v_id)
-
-	def delete_edge(self, v1_name: str, v2_name: str = None):
-		v1_id = self.get_vertex_id(v1_name)
-		if v2_name is not None:
-			neighbors = [self.get_vertex_id(v2_name)]
-		else:
-			neighbors = [v.id for v in self.get_neighbors(v1_name)]
-
-		for neighbor_id in neighbors:
-			edge = self.get_edge(v1_id, neighbor_id)
-			self._edges.pop(edge.id)
-			self._adjacency_map[neighbor_id].remove(edge.id)
-
 	def get_edges(self, name: str) -> List[Edge]:
 		v_id = self.get_vertex_id(name)
 		return [self.get_edge(e_id) for e_id in self._adjacency_map[v_id]]
@@ -209,6 +234,18 @@ class Graph:
 	def unmark_all_vertices(self):
 		for vertex in self._vertices.values():
 			vertex.marked = False
+
+	def mark_edge(self, v1_id_or_name: Union[str, int], v2_id_or_name: Union[str, int] = None):
+		edge = self.get_edge(v1_id_or_name, v2_id_or_name)
+		self._edges[edge.id].marked = True
+
+	def unmark_edge(self, v1_id_or_name: Union[str, int], v2_id_or_name: Union[str, int] = None):
+		edge = self.get_edge(v1_id_or_name, v2_id_or_name)
+		self._edges[edge.id].marked = False
+
+	def unmark_all_edges(self):
+		for edge in self._edges.values():
+			edge.marked = False
 
 	def modify_edge(self, v1_name: str, v2_name: str, new_weight: float) -> None:
 		if not self.contains_edge(v1_name, v2_name):

@@ -1,5 +1,5 @@
 """Implementation of Rabin-Karp algorithm"""
-from typing import List, Callable
+from typing import List
 
 
 def fermat_prime(n: int):
@@ -65,7 +65,8 @@ def rabin_karp(text: str, pattern: str, base: int = None, q: int = None) -> List
     in the text given the pattern. It uses rolling hash technique to
     keep the hashing operation time constant. You can see the
     algorithm and the pseudo-code in detail via the following URL.
-    https://en.wikipedia.org/wiki/Rabin%E2%80%93Karp_algorithm
+
+    URL: https://en.wikipedia.org/wiki/Rabin%E2%80%93Karp_algorithm
 
     Worst-case:
         - O((n-m+1)m) assuming every shift has collision.
@@ -83,10 +84,16 @@ def rabin_karp(text: str, pattern: str, base: int = None, q: int = None) -> List
     Returns:
         List of valid shifts.
     """
+    # Preprocessing, we do case-insensitive matching
+    # as both text and pattern are converted to lowercase.
     text = text.lower()
     pattern = pattern.lower()
+
+    # Setting some default values used in hash function
     base = base or len(pattern)
     q = q or fermat_prime(4)
+
+    # Computing required values
     pattern_hash = hash_fn(pattern, base, q)
     initial_hash_value = hash_fn(text[:len(pattern)], base, q)
     rolling_hash = RollingHash(text, len(pattern), initial_hash_value, mod_value=q, hash_factor=base)

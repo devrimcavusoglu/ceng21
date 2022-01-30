@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 
 from final_prep.data_structures.graph import Graph, Edge
@@ -38,6 +40,15 @@ def bellman_ford(g: Graph, source: str, target: str = None):
             table[v, 0] = d_u + edge.weight
             table[v, 1] = u
 
+    def path_from_table(table: np.ndarray) -> List[str]:
+        target_id = g.get_vertex_id(target)
+        prev = target_id
+        path = []
+        while prev != -1:
+            path.insert(0, g.get_vertex_name(prev))
+            prev = int(table[prev, 1])
+        return path
+
     source_id = g.get_vertex_id(source)
     table = initialize(len(g), source_id)
 
@@ -46,20 +57,15 @@ def bellman_ford(g: Graph, source: str, target: str = None):
             relax(edge, vertex.id, table)
 
     if target is None:
-        return table
+        return table, None
 
-    target_id = g.get_vertex_id(target)
-    prev = target_id
-    path = []
-    while prev != -1:
-        path.insert(0, g.get_vertex_name(prev))
-        prev = int(table[prev, 1])
-    print(f"Shortest path from '{source}' to '{target}':", table[target_id, 0])
-    return path
+    path = path_from_table(table)
+    distance = table[g.get_vertex_id(target), 0]
+    return distance, path
 
 
 if __name__ == "__main__":
     fp = "C:\\Users\\devri\\lab\\projects\\ceng21\\315\\final_prep\\example_graph.csv"
     g = Graph.from_file(fp)
-    table = bellman_ford(g, "A", "F")
-    print(table)
+    distance, path = bellman_ford(g, "A", "J")
+    print("Distance:", distance, " | path:", path)

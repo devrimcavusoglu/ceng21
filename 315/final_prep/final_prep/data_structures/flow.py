@@ -153,6 +153,7 @@ class FlowNetwork(DiGraph):
         v1.outgoing_flow += flow
         v2.incoming_flow += flow
 
+
 @dataclass
 class ResidualNetworkEdge(NetworkEdge):
     reverse_edge_id: int = -1
@@ -206,9 +207,6 @@ if __name__ == "__main__":
     G_f.print()
 
     print("Initial network")
-    print("Valid:", network.is_valid())
-    print("Putting flow through on edge (1) with flow = 3")
-    network.put_flow(1, 3)
     print("Valid:", network.is_valid())
     for node in network:
         print("name:", node.name, "incoming:", node.incoming_flow, "outgoing:", node.outgoing_flow)
