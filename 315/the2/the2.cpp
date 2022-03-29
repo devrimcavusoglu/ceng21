@@ -37,8 +37,7 @@ int classical_partition(unsigned short *arr, int size, long &swap, double &avg_d
 	int i = -1;
 	for (int j = 0; j<size-1; j++){
 		if (arr[j] >= pivot){
-			i++;
-			swappp(arr[i], arr[j], swap);
+			swappp(arr[++i], arr[j], swap);
 			set_dist(i, j, avg_dist, max_dist);
 		}
 	}
