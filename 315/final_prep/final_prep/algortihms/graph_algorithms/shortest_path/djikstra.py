@@ -72,12 +72,12 @@ def djikstra(g: Graph, source: str, target: str = None):
     while not heap.empty():
         dvpair = heap.get()
         u = dvpair.vertex
-        g.mark_vertex(u.name)
         for edge in g.get_edges(u.name):
             d_v = relax(edge, u.id, table)
             v = g.get_vertex(edge.complementary(u.id))
             if not v.marked:
                 heap.put(DistanceVertexPair(distance=d_v, vertex=v))
+        g.mark_vertex(u.name)
 
     g.unmark_all_vertices()
 

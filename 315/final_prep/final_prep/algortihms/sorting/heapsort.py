@@ -13,7 +13,7 @@ def left_child(i: int):
     return 2*i + 1
 
 
-def sift_down(a: List, start: int, end: int):
+def bubble_down(a: List, start: int, end: int):
     root = start
     while left_child(root) <= end:
         child = left_child(root)
@@ -53,7 +53,7 @@ def heapsort(a: List[int]):
         end -= 1
         # We need the following operation as the heap
         # property is ruined by the swap above.
-        sift_down(a, 0, end)
+        bubble_down(a, 0, end)
 
     return a
 
