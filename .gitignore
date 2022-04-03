@@ -41,3 +41,4 @@ CMakeLists.txt
 test
 
 __pycache__/
+*.pyc
