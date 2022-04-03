@@ -1,0 +1,5 @@
+name: 315-final
+dependencies:
+  - numpy
+  - pip
+  - python=3.9
