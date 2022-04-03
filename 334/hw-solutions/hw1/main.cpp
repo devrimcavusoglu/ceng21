@@ -22,10 +22,32 @@ std::string exec(const char* cmd) {
 }
 
 
+char *str_to_char(const std::string& str) {
+	char c_char[str.length() + 1];
+	strcpy(c_char, str.c_str());
+	return c_char;
+}
+
+
+void parse_input(char *init_line) {
+	int sts;
+	parsed_input *p;
+	std::string input_bundle;
+
+	sts = parse(init_line, 1, p);
+	do {
+		std::cin >> input_bundle;
+		char *c_char = str_to_char(input_bundle);
+		std::cout << c_char << std::endl;
+		sts = parse(c_char, 1, p);
+		/*s = p->command.bundle_name;*/
+		std::cout << sts << std::endl;
+	} while (sts != 1);
+}
+
+
 int main() {
 	std::string input;
- 	parsed_input *p;
- 	int sts;
 
 	while (true) {
 		std::cout << ">>";
@@ -39,24 +61,8 @@ int main() {
 		}
 		else {		
 			if (input.rfind("pbc", 0) == 0) {
-				std::string input_bundle;
-				while (true) {
-					std::cin >> input_bundle;
-					char c_char[input_bundle.length() + 1];
-					strcpy(c_char, input_bundle.c_str());
-					/*std::cout << "Recieved: '" << c_char << "'\n";*/
-					sts = parse(c_char, 1, p);
-					if (input_bundle == "pbs") {
-						sts = parse(c_char, 0, p);
-						std::string s;
-						s = p->command.bundle_name;
-						std::cout << s << std::endl;
-						break;
-					}
-					else {
-						sts = parse(c_char, 1, p);
-					}
-				}
+				char *init_line = str_to_char(input);
+				parse_input(init_line);
 			}
 			else {
 				std::cout << "Unknown cmd.\n";

@@ -39,3 +39,7 @@
 CMakeLists.txt
 *.txt
 test
+
+
+__pycache__/
+*.pyc
