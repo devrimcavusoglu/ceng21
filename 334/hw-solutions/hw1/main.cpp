@@ -1,72 +1,52 @@
 #include <cstdio>
 #include <iostream>
-#include <memory>
-#include <stdexcept>
 #include <string>
-#include <array>
 
 #include "parser.c"
 
 
-std::string exec(const char* cmd) {
-    std::array<char, 128> buffer;
-    std::string result;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
-    if (!pipe) {
-        throw std::runtime_error("popen() failed!");
-    }
-    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-        result += buffer.data();
-    }
-    return result;
-}
-
-
-char *str_to_char(const std::string& str) {
-	char c_char[str.length() + 1];
-	strcpy(c_char, str.c_str());
-	return c_char;
-}
-
-
-void parse_input(char *init_line) {
+int main() {
 	int sts;
 	parsed_input *p;
-	std::string input_bundle;
-
-	sts = parse(init_line, 1, p);
-	do {
-		std::cin >> input_bundle;
-		char *c_char = str_to_char(input_bundle);
-		std::cout << c_char << std::endl;
-		sts = parse(c_char, 1, p);
-		/*s = p->command.bundle_name;*/
-		std::cout << sts << std::endl;
-	} while (sts != 1);
-}
-
-
-int main() {
 	std::string input;
+	char *init_line;
+
+	bool input_marker = true;
+	short is_bundle_creation = 0;
 
 	while (true) {
-		std::cout << ">>";
-		std::cin >> input;
+		if (input_marker) std::cout << ">>> ";
+		else std::cout << "(c) ";
+
+		std::getline(std::cin >> std::ws, input);
 		
-		if(input=="quit")
-			return 0;
-		else if (input == "test") {
-			std::string res = exec("echo abc");
-			std::cout << res;
+		init_line = input.append("\n").data();
+		sts = parse(init_line, is_bundle_creation, p);
+
+		if (p->command.type == command_type::QUIT) return 0;
+		else if (p->command.type == command_type::PROCESS_BUNDLE_CREATE) {
+			// PB Creation Start
+			input_marker = false;
+			is_bundle_creation = 1;
 		}
-		else {		
-			if (input.rfind("pbc", 0) == 0) {
-				char *init_line = str_to_char(input);
-				parse_input(init_line);
+		else if (p->command.type == command_type::PROCESS_BUNDLE_STOP) {
+			// PB Creation End
+			input_marker = true;
+			is_bundle_creation = 0;
+		}
+		else {
+			// Execution
+			if (is_bundle_creation) {
 			}
 			else {
-				std::cout << "Unknown cmd.\n";
 			}
 		}
+		std::cout << "#################\n";
+		std::cout << "sts: " << sts << std::endl;
+		std::cout << "Type: " << p->command.type << std::endl;
+		std::cout << "Name: " << p->command.bundle_name << std::endl;
+		std::cout << "Count: " << p->command.bundle_count << std::endl;
+
+		
 	}
 }

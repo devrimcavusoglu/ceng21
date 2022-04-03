@@ -8,8 +8,8 @@ build:
 		$(CXX) $(CXXFLAGS) $(SRCS) -o $(EXENAME)
 
 clean:
-	del *.o
-	del *.exe
+	rm -f *.o
+	rm -f *.exe
 
 new: clean
 	$(MAKE)
