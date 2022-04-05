@@ -58,10 +58,17 @@ int main() {
 				pb->addCommand(input);
 			}
 			else {
-				std::cout << "bundle count: " << p->command.bundle_count << std::endl;
+				int bcount = p->command.bundle_count;
+				for (int i = 0; i < bcount; i++) {
+					char *pb_name = p->command.bundles[i].name;
+					ProcessBundle *current = bcb.get(pb_name);
+					std::cout << current->name << std::endl;
+				}
+
+/*				std::cout << "bundle count: " << p->command.bundle_count << std::endl;
 				std::cout << p->command.bundles[0].name << std::endl;
 				std::cout << "in: " << p->command.bundles[0].input << std::endl;
-				std::cout << "out: " << p->command.bundles[0].output << std::endl;
+				std::cout << "out: " << p->command.bundles[0].output << std::endl;*/
 			}
 		}
 		/*std::cout << "sts: " << sts << std::endl;

@@ -43,6 +43,14 @@ public:
         bundles.push_back(pb);
     }
 
+    ProcessBundle *get(char *name) {
+        for (int i = 0; i < this->count(); i++) {
+            if (this->bundles[i]->name == name) {
+                return bundles[i];
+            }
+        }
+    }
+
     int count() const {
         return bundles.size();
     }
