@@ -24,10 +24,17 @@ int main() {
 		else std::cout << "# ";
 
 		std::getline(std::cin >> std::ws, input);
+
+		if (input == "ls") {
+			for (int i = 0; i < bcb.count(); i++) {
+				std::string pb_name = bcb.bundles[i]->name;
+				std::cout << "PB name: " << pb_name << std::endl;
+			}
+			continue;
+		}
 		
 		init_line = input.append("\n").data();
 		sts = parse(init_line, is_bundle_creation, p);
-
 		if (p->command.type == command_type::QUIT) {
 			delete p;
 			delete pb;
@@ -51,12 +58,16 @@ int main() {
 				pb->addCommand(input);
 			}
 			else {
+				std::cout << "bundle count: " << p->command.bundle_count << std::endl;
+				std::cout << p->command.bundles[0].name << std::endl;
+				std::cout << "in: " << p->command.bundles[0].input << std::endl;
+				std::cout << "out: " << p->command.bundles[0].output << std::endl;
 			}
 		}
 		/*std::cout << "sts: " << sts << std::endl;
 		std::cout << "Type: " << p->command.type << std::endl;
 		std::cout << "Name: " << p->command.bundle_name << std::endl;
-		std::cout << "Count: " << p->command.bundle_count << std::endl;*/
-		std::cout << bcb.count() << ", " << pb->count() <<  std::endl;
+		std::cout << "Count: " << p->command.bundle_count << std::endl;
+		std::cout << bcb.count() << ", " << pb->count() <<  std::endl;*/
 	}
 }
