@@ -8,6 +8,21 @@
 #include "bundle.h"
 
 
+void execute(parsed_input *p, BundleControlBlock &bcb) {
+	int bcount = p->command.bundle_count;
+	for (int i = 0; i < bcount; i++) {
+		char *pb_name = p->command.bundles[i].name;
+		char *out = p->command.bundles[i].output;
+		char *in = p->command.bundles[i].input;
+		ProcessBundle *current = bcb.get(pb_name);
+		if (current) std::cout << current->name << std::endl;
+		else std::cout << "Unknown bundle: '" << pb_name << "'\n";
+		if (out) std::cout << out << std::endl; 
+		if (in) std::cout << in << std::endl;
+	}
+}
+
+
 int main() {
 	int sts;
 	parsed_input *p = new parsed_input;
@@ -52,23 +67,13 @@ int main() {
 			is_bundle_creation = 0;
 			if (pb) bcb.add(pb);
 		}
-		else {
+		else if (p->command.type == command_type::PROCESS_BUNDLE_EXECUTION){
 			// Execution
 			if (is_bundle_creation && pb) {
 				pb->addCommand(input);
 			}
 			else {
-				int bcount = p->command.bundle_count;
-				for (int i = 0; i < bcount; i++) {
-					char *pb_name = p->command.bundles[i].name;
-					ProcessBundle *current = bcb.get(pb_name);
-					std::cout << current->name << std::endl;
-				}
-
-/*				std::cout << "bundle count: " << p->command.bundle_count << std::endl;
-				std::cout << p->command.bundles[0].name << std::endl;
-				std::cout << "in: " << p->command.bundles[0].input << std::endl;
-				std::cout << "out: " << p->command.bundles[0].output << std::endl;*/
+				execute(p, bcb);
 			}
 		}
 		/*std::cout << "sts: " << sts << std::endl;
