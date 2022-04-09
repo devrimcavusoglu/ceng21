@@ -5,6 +5,7 @@
 #include <iomanip>
 
 #include "parser.h"
+#include "bcb.h"
 #include "bundle.h"
 
 
@@ -14,11 +15,15 @@ void execute(parsed_input *p, BundleControlBlock &bcb) {
 		char *pb_name = p->command.bundles[i].name;
 		char *out = p->command.bundles[i].output;
 		char *in = p->command.bundles[i].input;
+
 		ProcessBundle *current = bcb.get(pb_name);
-		if (current) std::cout << current->name << std::endl;
-		else std::cout << "Unknown bundle: '" << pb_name << "'\n";
-		if (out) std::cout << out << std::endl; 
-		if (in) std::cout << in << std::endl;
+		//std::cout << "current size: " << current->count() << std::endl;
+		//std::cout << "current command: " << current->commands[0] << std::endl;
+		if (current) {
+			current->execute();
+		}
+		else 
+			std::cout << "Unknown bundle: '" << pb_name << "'\n";
 	}
 }
 
@@ -67,9 +72,9 @@ int main() {
 			is_bundle_creation = 0;
 			if (pb) bcb.add(pb);
 		}
-		else if (p->command.type == command_type::PROCESS_BUNDLE_EXECUTION){
+		else {
 			// Execution
-			if (is_bundle_creation && pb) {
+			if (is_bundle_creation and pb) {
 				pb->addCommand(input);
 			}
 			else {
