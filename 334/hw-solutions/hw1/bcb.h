@@ -22,6 +22,14 @@ public:
         }
     }
 
+    bool exists(std::string bundle_name) {
+        for (int i = 0; i < this->count(); i++) {
+            if (this->bundles[i]->name == bundle_name)
+                return true;
+        }
+        return false;
+    }
+
     int count() const {
         return bundles.size();
     }

@@ -75,7 +75,10 @@ int main() {
 			// PB Creation Start
 			input_marker = false;
 			is_bundle_creation = 1;
-			pb = new ProcessBundle(p->command.bundle_name);
+			if (bcb.exists(p->command.bundle_name))
+				pb = bcb.get(p->command.bundle_name);
+			else
+				pb = new ProcessBundle(p->command.bundle_name);
 		}
 		else if (p->command.type == command_type::PROCESS_BUNDLE_STOP) {
 			// PB Creation End
