@@ -1,9 +1,3 @@
-#include <iostream>
-#include <string>
-#include <sys/wait.h>
-#include <sys/types.h>
-#include "unistd.h"
-
 #include "bundle.h"
 
 
@@ -19,15 +13,25 @@ std::vector<std::string> ProcessBundle::getCommands() {
     return commands;
 }
 
-void ProcessBundle::execute(int in, int out) {
+void ProcessBundle::execute(char *in, char *out) {
+	if (in) {
+		std::cout << "input: " << in << std::endl;
+		std::ofstream fd_in (in);
+	}
+	if (out) {
+		std::cout << "output: " << out << std::endl;
+		std::ofstream fd_out (out, ios::out | ios::app);
+	}
+
+	int pid;
+
 	for (int i = 0; i < this->count(); i++) {
-		std::cout << "current command: " << this->commands[i] << std::endl;
-		int pid = fork();
+		pid = fork();
 		if (pid == 0) {
-			char *cmd[] = {"/bin/sh", "-c", this->commands[0].data(), NULL};
+			char *cmd[] = {"/bin/sh", "-c", this->commands[i].data(), NULL};
 			execvp(cmd[0], cmd);
 		}
-		int status;
-		waitpid(pid, NULL, 0);
 	}
+
+	waitpid(pid, NULL, 0);
 }

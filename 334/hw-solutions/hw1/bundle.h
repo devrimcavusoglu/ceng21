@@ -1,6 +1,12 @@
 #ifndef BUNDLE_H
 #define BUNDLE_H
 
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <vector>
 
 
@@ -21,7 +27,8 @@ public:
     std::vector<std::string> getCommands();
 
     // Executes the bundle with the given commands.
-    void execute(int in = -1, int out = -1);
+    // https://stackoverflow.com/questions/762200/how-to-capture-output-of-execvp
+    void execute(char* in, char *out);
 };
 
 
