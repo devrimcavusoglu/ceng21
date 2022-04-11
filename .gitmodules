@@ -1,0 +1,3 @@
+[submodule "334/hw-resources"]
+	path = 334/hw-resources
+	url = git@github.com:CagriAkpak/METU-CENG-OS.git
