@@ -10,6 +10,7 @@
 
 
 void execute(parsed_input *p, BundleControlBlock &bcb) {
+	setbuf(stdout, NULL);
 	int bcount = p->command.bundle_count;
 	if (bcount == 1) {
 		char *pb_name = p->command.bundles[0].name;
@@ -27,8 +28,6 @@ void execute(parsed_input *p, BundleControlBlock &bcb) {
 			char *out = p->command.bundles[i].output;
 
 			ProcessBundle *current = bcb.get(pb_name);
-			//std::cout << "current size: " << current->count() << std::endl;
-			//std::cout << "current command: " << current->commands[0] << std::endl;
 			if (current) {
 				current->execute(in, out);
 			}
@@ -95,10 +94,5 @@ int main() {
 				execute(p, bcb);
 			}
 		}
-		/*std::cout << "sts: " << sts << std::endl;
-		std::cout << "Type: " << p->command.type << std::endl;
-		std::cout << "Name: " << p->command.bundle_name << std::endl;
-		std::cout << "Count: " << p->command.bundle_count << std::endl;
-		std::cout << bcb.count() << ", " << pb->count() <<  std::endl;*/
 	}
 }
