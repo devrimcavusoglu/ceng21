@@ -30,14 +30,13 @@ public:
     std::vector<std::string> getCommands();
 
     // Executes the bundle with the given commands.
-    // https://stackoverflow.com/questions/762200/how-to-capture-output-of-execvp
-    void execute(char* in, char *out);
+    std::string execute(char* in, char *out);
 
     /*
     * Returns a tuple of process_id capturing execvp out
     * to STDIN
     */
-    pid_t subprocess(std::string &cmd, int *fds);
+    std::string subprocess(std::string &cmd, std::string &input);
 
     std::string readFromFD(int fd);
 };

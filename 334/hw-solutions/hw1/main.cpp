@@ -10,7 +10,7 @@
 
 
 void execute(parsed_input *p, BundleControlBlock &bcb) {
-	setbuf(stdout, NULL);
+	//setbuf(stdout, NULL);
 	int bcount = p->command.bundle_count;
 	if (bcount == 1) {
 		char *pb_name = p->command.bundles[0].name;
@@ -62,6 +62,8 @@ int main() {
 			}
 			continue;
 		}
+		if (input == "clear")
+			system("clear");
 		
 		init_line = input.append("\n").data();
 		sts = parse(init_line, is_bundle_creation, p);

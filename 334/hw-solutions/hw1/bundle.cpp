@@ -19,8 +19,9 @@ std::vector<std::string> ProcessBundle::getCommands() {
 std::string ProcessBundle::readFromFD(int fd) {
 	std::string data;
 	char *buffer = new char[BUFFER_SIZE];
+	FILE* f = fdopen(fd, "r");
 
-	while (read(fd, buffer, BUFFER_SIZE)) {
+	while (fgets(buffer, BUFFER_SIZE, f)) {
 		data.append(buffer);
 	}
 
@@ -28,53 +29,57 @@ std::string ProcessBundle::readFromFD(int fd) {
 	return data;
 }
 
-void ProcessBundle::execute(char *in, char *out) {
-	int *fds = new int[2];
-	pipe(fds);
+std::string ProcessBundle::execute(char *in, char *out) {
+	
 	pid_t sp;
+	std::string content;
+	std::string input;
+	std::string cmd;
 
 	if (in) {
 		std::cout << "input: " << in << std::endl;
-		std::ifstream fd_in (in);
+		int fd_in = open(in, O_RDONLY);
+		input = this->readFromFD(fd_in);
 	}
 
 	for (int i = 0; i < this->count(); i++) {
-		sp = this->subprocess(this->commands[i], fds);
+		content += this->subprocess(this->commands[i], input);	
 	}
-	
-	std::string content = this->readFromFD(fds[0]);
-	close(fds[0]);
 	if (out) {
-		std::cout << "output: " << out << std::endl;
-		std::ofstream myfile;
-		myfile.open(out);
-		myfile << content;
-		myfile.close();
-		//fd_out = open(out, O_WRONLY | O_APPEND | O_CREAT, 0644);
-		//write(fd_out, content.data(), content.size());
-		//close(fd_out);
+		int fd_out = open(out, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+		write(fd_out, content.data(), content.size());
+		close(fd_out);
 	}
 	else {
-		/*std::cout << "read size: " << content.size() << std::endl;
-		std::cout << "content ---->\n" << content;*/
 		std::cout << content;
 	}
 	// wait for all children
 	while (wait(NULL) > 0);
-	delete [] fds;
+	return content;
 }
 
 
-pid_t ProcessBundle::subprocess(std::string &cmd, int *fds) {
+std::string ProcessBundle::subprocess(std::string &cmd, std::string &input) {
+	std::string s;
+	int *fds = new int[2];
+	pipe(fds);
 	pid_t pid = fork();
+	if (pid == -1) {
+		std::cerr << "Fork failed.";
+	}
 	if (pid == 0) {
 		close(fds[0]); // no reading
 		dup2(fds[1], STDOUT_FILENO);
 		close(fds[1]);
-		char *argv[] = {"/bin/sh", "-c", cmd.data(), NULL};
-		execvp(argv[0], argv);
+		system(cmd.data());
+		if (input != "") {
+			write(STDIN_FILENO, input.data(), input.size());
+		}
 		exit(0);
 	}
 	close(fds[1]); // no writing
-	return pid;
+	s = this->readFromFD(fds[0]);
+	close(fds[0]);
+	delete [] fds;
+	return s;
 }
