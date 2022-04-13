@@ -34,7 +34,7 @@ std::string ProcessBundle::execute(char *in, char *out) {
 	pid_t sp;
 	std::string content;
 	std::string input;
-	std::string cmd;
+	redirection_t redirections;
 
 	if (in) {
 		std::cout << "input: " << in << std::endl;
@@ -43,7 +43,13 @@ std::string ProcessBundle::execute(char *in, char *out) {
 	}
 
 	for (int i = 0; i < this->count(); i++) {
-		content += this->subprocess(this->commands[i], input);	
+		redirections = this->subprocess(this->commands[i]);
+		std::cout << "###########\n";
+		dprintf(redirections.stdin.second, "%s", input.data());
+		close(redirections.stdin.second);
+		std::cout << "###########\n";
+		content += this->readFromFD(redirections.stdout.first);
+		close(redirections.stdout.first);
 	}
 	if (out) {
 		int fd_out = open(out, O_WRONLY | O_TRUNC | O_CREAT, 0644);
@@ -59,27 +65,32 @@ std::string ProcessBundle::execute(char *in, char *out) {
 }
 
 
-std::string ProcessBundle::subprocess(std::string &cmd, std::string &input) {
+redirection_t ProcessBundle::subprocess(std::string &cmd) {
 	std::string s;
-	int *fds = new int[2];
-	pipe(fds);
+	int fds_in[2];
+	int fds_out[2];
+	pipe(fds_in); //pipe for out
+	pipe(fds_out); //pipe for in
+
+	redirection_t redir = { 
+		std::make_pair(fds_in[0], fds_in[1]), 
+		std::make_pair(fds_out[0], fds_out[1]) 
+	};
 	pid_t pid = fork();
 	if (pid == -1) {
 		std::cerr << "Fork failed.";
 	}
 	if (pid == 0) {
-		close(fds[0]); // no reading
-		dup2(fds[1], STDOUT_FILENO);
-		close(fds[1]);
+		close(redir.stdin.second);
+		close(redir.stdout.first);
+		dup2(redir.stdout.second, STDOUT_FILENO);
+		dup2(redir.stdin.first, STDIN_FILENO);
+		close(redir.stdout.second);
+		close(redir.stdin.first);
 		system(cmd.data());
-		if (input != "") {
-			write(STDIN_FILENO, input.data(), input.size());
-		}
 		exit(0);
 	}
-	close(fds[1]); // no writing
-	s = this->readFromFD(fds[0]);
-	close(fds[0]);
-	delete [] fds;
-	return s;
+	close(redir.stdin.first);
+	close(redir.stdout.second);
+	return redir;
 }

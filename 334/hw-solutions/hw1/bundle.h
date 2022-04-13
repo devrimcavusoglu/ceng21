@@ -13,6 +13,12 @@
 #include <vector>
 
 
+typedef struct redirection_t {
+    std::pair<int, int> stdin;
+    std::pair<int, int> stdout;
+} redirection_t;
+
+
 class ProcessBundle {
 public:
     std::string name;
@@ -32,11 +38,10 @@ public:
     // Executes the bundle with the given commands.
     std::string execute(char* in, char *out);
 
-    /*
-    * Returns a tuple of process_id capturing execvp out
-    * to STDIN
+    /* Creates a subprocess, executes the given command
+    *  and returns a pair of int for (in, out) file descriptors.
     */
-    std::string subprocess(std::string &cmd, std::string &input);
+    redirection_t subprocess(std::string &cmd);
 
     std::string readFromFD(int fd);
 };
