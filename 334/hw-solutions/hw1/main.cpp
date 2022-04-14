@@ -9,36 +9,32 @@
 #include "bundle.h"
 
 
-std::string single_execution(ProcessBundle *pb, char *in, char *out, bool is_last_bundle) {
-	int fd_in;
-	int fd_out;
-	std::string capture;
-
-	if (in) {
-		std::cout << "input: " << in << std::endl;
-		fd_in = open(in, O_RDONLY);	
+int sanitize_parameters(int i, int bcount, char *in, char *out) {
+	int err = 0;
+	if ((i > 0 and i < bcount - 1) and (in or out)) {
+		std::cerr << "Got input or output redirection in the middle of pipe. Execution aborted.\n";
+		err = 1;
 	}
-	else
-		fd_in = -1;
-	
-	if (out) 
-		fd_out = open(out, O_WRONLY | O_TRUNC | O_CREAT, 0644);
-	else if (!out && is_last_bundle)
-		fd_out = STDOUT_FILENO;
-	else
-		fd_out = -1;
-
-	return pb->execute(fd_in, fd_out);
+	else if (i == 0 and bcount > 1 and out) {
+		std::cerr << "Got output redirection in the beginning of pipe. Execution aborted.\n";
+		err = 1;
+	}
+	else if (i == bcount - 1 and bcount > 1 and in) {
+		std::cerr << "Got input redirection at the end of pipe. Execution aborted.\n";
+		err = 1;
+	}
+	return err;
 }
 
 
 void execute(parsed_input *p, BundleControlBlock &bcb) {
 	int bcount = p->command.bundle_count;
-
+	int err_sts;
+	int fd_in;
+	int fd_out;
+	std::string str_in;
 	std::string capture;
 	bool is_last_bundle = false;
-	int fds[2];
-	pipe(fds);
 
 	for (int i = 0; i < bcount; i++) {
 		if (i == bcount - 1)
@@ -47,24 +43,32 @@ void execute(parsed_input *p, BundleControlBlock &bcb) {
 		char *pb_name = p->command.bundles[i].name;
 		char *in = p->command.bundles[i].input;
 		char *out = p->command.bundles[i].output;
+		// check if input configuration is OK
+		err_sts = sanitize_parameters(i, bcount, in, out);
+		if (err_sts)
+			return;
+
 		ProcessBundle *pb = bcb.get(pb_name);
 
-		if ((i > 0 and i < bcount - 1) and (in or out)) {
-			std::cerr << "Got input or output redirection in the middle of pipe. Execution aborted.\n";
-			exit(1);
-		}
-		else if (i == 0 and bcount > 1 and out) {
-			std::cerr << "Got output redirection in the beginning of pipe. Execution aborted.\n";
-			exit(1);
-		}
-		else if (i == bcount - 1 and bcount > 1 and in) {
-			std::cerr << "Got input redirection at the end of pipe. Execution aborted.\n";
-			exit(1);
+		// Set input redirection
+		if (in) 
+			fd_in = open(in, O_RDONLY);
+		else {
+			fd_in = -1;
 		}
 
-		capture = single_execution(pb, in, out, is_last_bundle);
+		// Set output redirection
+		if (out) 
+			fd_out = open(out, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+		else if (!out and is_last_bundle)
+			fd_out = STDOUT_FILENO;
+		else
+			fd_out = -1;
 
+		capture = pb->execute(fd_in, fd_out, str_in);
+		str_in = capture;
 	}
+	
 }
 
 
