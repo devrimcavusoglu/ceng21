@@ -9,32 +9,65 @@
 #include "bundle.h"
 
 
+void single_execution(ProcessBundle *pb, char *in, char *out) {
+	int fd_in;
+	int fd_out;
+	std::string capture;
+
+	if (in) {
+		std::cout << "input: " << in << std::endl;
+		fd_in = open(in, O_RDONLY);	
+	}
+	else
+		fd_in = -1;
+	
+	if (out) 
+		fd_out = open(out, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+	else
+		fd_out = -1;
+
+	capture = pb->execute(fd_in, fd_out);
+}
+
+
 void execute(parsed_input *p, BundleControlBlock &bcb) {
-	//setbuf(stdout, NULL);
 	int bcount = p->command.bundle_count;
 	if (bcount == 1) {
 		char *pb_name = p->command.bundles[0].name;
 		char *in = p->command.bundles[0].input;
 		char *out = p->command.bundles[0].output;
-		
+		ProcessBundle *pb = bcb.get(pb_name);
+		single_execution(pb, in, out);
+		return;
+	}
+
+	/*multiple_execution();
+	if (in) {
+		std::cout << "input: " << in << std::endl;
+		int fd_in = open(in, O_RDONLY);
+		input = pb->readFromFD(fd_in);
+	}
+	for (int i = 0; i < bcount; i++) {
+		char *pb_name = p->command.bundles[i].name;
+		char *in = p->command.bundles[i].input;
+		char *out = p->command.bundles[i].output;
+
 		ProcessBundle *current = bcb.get(pb_name);
-		if (current) current->execute(in, out);
-	}
-	else {
-
-		for (int i = 0; i < bcount; i++) {
-			char *pb_name = p->command.bundles[i].name;
-			char *in = p->command.bundles[i].input;
-			char *out = p->command.bundles[i].output;
-
-			ProcessBundle *current = bcb.get(pb_name);
-			if (current) {
-				current->execute(in, out);
-			}
-			else 
-				std::cout << "Unknown bundle: '" << pb_name << "'\n";
+		if (!current) {
+			std::cout << "Unknown bundle: '" << pb_name << "'\n";
+			continue;
 		}
-	}
+
+		current->execute(in, out);
+		if (out) {
+			int fd_out = open(out, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+			write(fd_out, content.data(), content.size());
+			close(fd_out);
+		}
+		else {
+			std::cout << content;
+		}
+	}*/
 }
 
 

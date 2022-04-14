@@ -36,7 +36,7 @@ public:
     std::vector<std::string> getCommands();
 
     // Executes the bundle with the given commands.
-    std::string execute(char* in, char *out);
+    std::string execute(int fd_in, int fd_out);
 
     /* Creates a subprocess, executes the given command
     *  and returns a pair of int for (in, out) file descriptors.

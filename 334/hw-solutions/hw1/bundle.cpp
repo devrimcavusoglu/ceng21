@@ -29,36 +29,28 @@ std::string ProcessBundle::readFromFD(int fd) {
 	return data;
 }
 
-std::string ProcessBundle::execute(char *in, char *out) {
-	
+std::string ProcessBundle::execute(int fd_in, int fd_out) {
 	pid_t sp;
 	std::string content;
 	std::string input;
 	redirection_t redirections;
 
-	if (in) {
-		std::cout << "input: " << in << std::endl;
-		int fd_in = open(in, O_RDONLY);
+	if (fd_in != -1)
 		input = this->readFromFD(fd_in);
-	}
-
 	for (int i = 0; i < this->count(); i++) {
 		redirections = this->subprocess(this->commands[i]);
-		std::cout << "###########\n";
 		dprintf(redirections.stdin.second, "%s", input.data());
 		close(redirections.stdin.second);
-		std::cout << "###########\n";
 		content += this->readFromFD(redirections.stdout.first);
 		close(redirections.stdout.first);
 	}
-	if (out) {
-		int fd_out = open(out, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+
+	if (fd_out != -1) {
 		write(fd_out, content.data(), content.size());
 		close(fd_out);
 	}
-	else {
+	else
 		std::cout << content;
-	}
 	// wait for all children
 	while (wait(NULL) > 0);
 	return content;
@@ -69,8 +61,8 @@ redirection_t ProcessBundle::subprocess(std::string &cmd) {
 	std::string s;
 	int fds_in[2];
 	int fds_out[2];
-	pipe(fds_in); //pipe for out
-	pipe(fds_out); //pipe for in
+	pipe(fds_in); //pipe for input redirection
+	pipe(fds_out); //pipe for output redirection
 
 	redirection_t redir = { 
 		std::make_pair(fds_in[0], fds_in[1]), 

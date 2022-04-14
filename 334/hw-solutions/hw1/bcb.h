@@ -37,6 +37,17 @@ public:
     std::vector<ProcessBundle*> all() {
         return bundles;
     }
+
+    void setCapture(std::string s) {
+        this->current_capture = s;
+    }
+
+    std::string getCapture() {
+        this->current_capture;
+    }
+
+private:
+    std::string current_capture;
 };
 
 #endif //BCB_H
