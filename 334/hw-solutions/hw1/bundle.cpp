@@ -45,12 +45,13 @@ std::string ProcessBundle::execute(int fd_in, int fd_out) {
 		close(redirections.stdout.first);
 	}
 
-	if (fd_out != -1) {
+	if (fd_out == STDOUT_FILENO) {
+		std::cout << content;
+	}
+	else if (fd_out != -1) {
 		write(fd_out, content.data(), content.size());
 		close(fd_out);
 	}
-	else
-		std::cout << content;
 	// wait for all children
 	while (wait(NULL) > 0);
 	return content;

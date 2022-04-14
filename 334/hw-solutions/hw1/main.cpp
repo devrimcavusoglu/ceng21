@@ -9,7 +9,7 @@
 #include "bundle.h"
 
 
-void single_execution(ProcessBundle *pb, char *in, char *out) {
+std::string single_execution(ProcessBundle *pb, char *in, char *out, bool is_last_bundle) {
 	int fd_in;
 	int fd_out;
 	std::string capture;
@@ -23,51 +23,48 @@ void single_execution(ProcessBundle *pb, char *in, char *out) {
 	
 	if (out) 
 		fd_out = open(out, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+	else if (!out && is_last_bundle)
+		fd_out = STDOUT_FILENO;
 	else
 		fd_out = -1;
 
-	capture = pb->execute(fd_in, fd_out);
+	return pb->execute(fd_in, fd_out);
 }
 
 
 void execute(parsed_input *p, BundleControlBlock &bcb) {
 	int bcount = p->command.bundle_count;
-	if (bcount == 1) {
-		char *pb_name = p->command.bundles[0].name;
-		char *in = p->command.bundles[0].input;
-		char *out = p->command.bundles[0].output;
-		ProcessBundle *pb = bcb.get(pb_name);
-		single_execution(pb, in, out);
-		return;
-	}
 
-	/*multiple_execution();
-	if (in) {
-		std::cout << "input: " << in << std::endl;
-		int fd_in = open(in, O_RDONLY);
-		input = pb->readFromFD(fd_in);
-	}
+	std::string capture;
+	bool is_last_bundle = false;
+	int fds[2];
+	pipe(fds);
+
 	for (int i = 0; i < bcount; i++) {
+		if (i == bcount - 1)
+			is_last_bundle = true;
+
 		char *pb_name = p->command.bundles[i].name;
 		char *in = p->command.bundles[i].input;
 		char *out = p->command.bundles[i].output;
+		ProcessBundle *pb = bcb.get(pb_name);
 
-		ProcessBundle *current = bcb.get(pb_name);
-		if (!current) {
-			std::cout << "Unknown bundle: '" << pb_name << "'\n";
-			continue;
+		if ((i > 0 and i < bcount - 1) and (in or out)) {
+			std::cerr << "Got input or output redirection in the middle of pipe. Execution aborted.\n";
+			exit(1);
+		}
+		else if (i == 0 and bcount > 1 and out) {
+			std::cerr << "Got output redirection in the beginning of pipe. Execution aborted.\n";
+			exit(1);
+		}
+		else if (i == bcount - 1 and bcount > 1 and in) {
+			std::cerr << "Got input redirection at the end of pipe. Execution aborted.\n";
+			exit(1);
 		}
 
-		current->execute(in, out);
-		if (out) {
-			int fd_out = open(out, O_WRONLY | O_TRUNC | O_CREAT, 0644);
-			write(fd_out, content.data(), content.size());
-			close(fd_out);
-		}
-		else {
-			std::cout << content;
-		}
-	}*/
+		capture = single_execution(pb, in, out, is_last_bundle);
+
+	}
 }
 
 
@@ -95,8 +92,10 @@ int main() {
 			}
 			continue;
 		}
-		if (input == "clear")
+		if (input == "clear") {
 			system("clear");
+			continue;
+		}
 		
 		init_line = input.append("\n").data();
 		sts = parse(init_line, is_bundle_creation, p);
