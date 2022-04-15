@@ -81,7 +81,7 @@ int parse(char *line, int is_bundle_creation, parsed_input *parsedInput) {
                 else if ( *current == '|' )
                     argument_count++;
             }
-        }
+        }        
         is_quoted = 0;
         index = 0;
         argument_index = 0;
