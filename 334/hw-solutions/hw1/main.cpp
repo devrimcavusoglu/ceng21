@@ -50,6 +50,11 @@ void execute(parsed_input *p, BundleControlBlock &bcb) {
 
 		ProcessBundle *pb = bcb.get(pb_name);
 
+		if (!pb) {
+			std::cerr << "Unknown bundle: '" << pb_name << "'\n";
+			return;
+		}
+
 		// Set input redirection
 		if (in) 
 			fd_in = open(in, O_RDONLY);
