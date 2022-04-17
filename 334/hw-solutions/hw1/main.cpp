@@ -89,12 +89,13 @@ int main() {
 	ProcessBundle *pb = NULL;
 
 	while (true) {
-		if (input_marker) std::cout << ">>> ";
-		else std::cout << "# ";
+		// Used to prompt markers for inputs and bundle creation
+		//if (input_marker) std::cout << ">>> ";
+		//else std::cout << "# ";
 
 		std::getline(std::cin >> std::ws, input);
 
-		if (input == "ls") {
+		/*if (input == "ls") {
 			for (int i = 0; i < bcb.count(); i++) {
 				std::string pb_name = bcb.bundles[i]->name;
 				std::cout << "PB name: " << pb_name << std::endl;
@@ -104,7 +105,7 @@ int main() {
 		if (input == "clear") {
 			system("clear");
 			continue;
-		}
+		}*/
 		
 		init_line = input.append("\n").data();
 		sts = parse(init_line, is_bundle_creation, p);
