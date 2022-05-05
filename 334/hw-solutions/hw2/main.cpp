@@ -6,6 +6,7 @@ std::vector<std::vector<int>> G;
 
 // Init Lock
 std::vector<std::unique_ptr<std::binary_semaphore>> S;
+std::binary_semaphore lock_turn{1};
 
 
 template <class T>
@@ -36,7 +37,7 @@ typedef struct thread_arguments {
 void *start(void* arguments) {
 	thargs_t *args = (thargs_t*)arguments;
 	args->pvt->ready();
-    args->pvt->start_collecting(G, S);   	
+    args->pvt->start_collecting(G, S, lock_turn);   	
     return NULL;
 }
 
@@ -80,7 +81,6 @@ int main() {
 		}
 	}
 
-	
 	for (int i = 0; i < parser.n_private; i++) {
 		pthread_join(threads[i], NULL);
 	}

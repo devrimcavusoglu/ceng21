@@ -11,17 +11,24 @@ void Private::addZone(int x, int y) {
 	this->zones.push_back(std::make_pair(x,y));
 }
 
-void Private::start_collecting(std::vector<std::vector<int> > &grid, std::vector<std::unique_ptr<std::binary_semaphore>> &sem) {
+void Private::start_collecting(
+	std::vector<std::vector<int> > &grid, 
+	std::vector<std::unique_ptr<std::binary_semaphore>> &sem,
+	std::binary_semaphore &lock_turn
+) {
 	for (int i = 0; i < this->zones.size(); i++) {
+		lock_turn.acquire();
 		this->lock_area(sem, this->zones[i].first, this->zones[i].second, grid[0].size());
 		this->collect_zone(grid, this->zones[i].first, this->zones[i].second);
 		this->unlock_area(sem, this->zones[i].first, this->zones[i].second, grid[0].size());
+		lock_turn.release();
 	}
+	hw2_notify(hw2_actions::GATHERER_EXITED, this->id, 0, 0);
 }
 
 void Private::collect_zone(std::vector<std::vector<int> > &grid, int x, int y) {
-	for (int i = x; i < this->collect_area.first; i++) {
-		for (int j = y; j < this->collect_area.second; j++) {
+	for (int i = x; i < x+this->collect_area.first; i++) {
+		for (int j = y; j < y+this->collect_area.second; j++) {
 			while (grid[i][j] > 0) {
 				Sleep(this->collect_time);
 				hw2_notify(hw2_actions::GATHERER_GATHERED, this->id, i, j);
@@ -30,6 +37,7 @@ void Private::collect_zone(std::vector<std::vector<int> > &grid, int x, int y) {
 			}
 		}
 	}
+	hw2_notify(hw2_actions::GATHERER_CLEARED, this->id, 0, 0);
 }
 
 void Private::lock_area(std::vector<std::unique_ptr<std::binary_semaphore>> &sem, int x, int y, int n_col) {
