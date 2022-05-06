@@ -36,8 +36,8 @@ typedef struct thread_arguments {
 
 void *start(void* arguments) {
 	thargs_t *args = (thargs_t*)arguments;
-	args->pvt->ready();
-    args->pvt->start_collecting(G, S, lock_turn);   	
+	Private *pvt = args->pvt;
+    pvt->start_collecting(G, S, lock_turn);
     return NULL;
 }
 

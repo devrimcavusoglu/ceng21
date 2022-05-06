@@ -45,12 +45,22 @@ public:
 	// we guarantee that there is no intervention of locking an area, and hence
 	// any other thread should wait for this atomic operation and it will be blocked
 	// if any cell intersects.
-	void lock_area(std::vector<std::unique_ptr<std::binary_semaphore>> &sem, int x, int y, int n_col);
+	void lock_area(
+		std::vector<std::unique_ptr<std::binary_semaphore>> &sem, 
+		const int x, 
+		const int y, 
+		int n_col
+	);
 
-	void unlock_area(std::vector<std::unique_ptr<std::binary_semaphore>> &sem, int x, int y, int n_col);
+	void unlock_area(
+		std::vector<std::unique_ptr<std::binary_semaphore>> &sem, 
+		int x, 
+		int y, 
+		int n_col
+	);
 
 	friend std::ostream& operator<<(std::ostream& os, const Private& pvt) {
-		os << "  Private #" << pvt.id  << " | collect_area: " << pvt.collect_area.first << "x" << pvt.collect_area.first << 
+		os << "  Private #" << pvt.id  << " | collect_area: " << pvt.collect_area.first << "x" << pvt.collect_area.second << 
 			" | collect_time: " << pvt.collect_time << std::endl;
 			for (int j = 0; j < pvt.zones.size(); j++) {
 				os << "\tZone " << j << ": (" << pvt.zones[j].first << ", " << pvt.zones[j].second << ")" << std::endl;
