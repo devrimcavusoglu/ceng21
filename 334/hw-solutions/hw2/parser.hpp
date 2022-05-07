@@ -10,7 +10,7 @@
 
 
 enum ParserStatus {
-	// INIT
+	// Init Status
 	NONE,
 
     // Grid
@@ -19,16 +19,28 @@ enum ParserStatus {
     // Privates
     PRIVATES_CONSTRUCTION,
     PRIVATES_CONSTRUCTION_OK,
+
+    // Commands
+    COMMANDS_CONSTRUCTION,
+    COMMANDS_CONSTRUCTION_OK
 };
+
+
+typedef struct Command {
+	unsigned int notify_time;
+	enum hw2_actions action;
+} command_t;
 
 
 class Parser {
 public:
 	ParserStatus status = ParserStatus::NONE;
 	int grid_size[2] = { 0, 0 };
-	int n_private = 0;
+	int n_privates = 0;
+	int n_commands = 0;
 	std::vector<std::vector<int>> grid;
 	std::vector<Private> privates;
+	std::vector<Command> commands;
 
 	// Parse input
     void parse();
@@ -38,6 +50,9 @@ public:
 
     // add Privates
     void addPrivates();
+
+    // add Commands (part-2)
+    void addCommands();
 };
 
 #endif //PARSER_HPP
