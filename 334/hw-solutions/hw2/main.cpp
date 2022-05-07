@@ -1,4 +1,4 @@
-#include <ctime>
+#include <chrono>
 
 #include "parser.hpp"
 
@@ -30,19 +30,18 @@ void print_arr(std::vector<T> &arr) {
 
 typedef struct thread_arguments {
     Private *pvt;
-    /*std::vector<std::vector<int>> *grid;
-    std::vector<std::unique_ptr<std::binary_semaphore>> *sem;*/
 } thargs_t;
 
 
-int time_elapsed(std::time_t ts_start) {
-	return (std::time(0) - ts_start) * 1000;
+int time_elapsed(int64_t ts_start) {
+	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - ts_start;
 }
 
 
-void fire_commands(std::vector<Command> &commands, std::time_t ts_start) {
+void fire_commands(std::vector<Command> &commands, int64_t ts_start) {
+	std::time_t t;
 	for (int i = 0; i < commands.size(); i++) {
-		while ( time_elapsed(ts_start) < commands[i].notify_time);
+		while (time_elapsed(ts_start) <= commands[i].notify_time);
 		hw2_notify(commands[i].action, 0, 0, 0);
 	}
 }
@@ -83,8 +82,8 @@ int main() {
 
 	// initialize notifier
 	hw2_init_notifier();
-	std::time_t t = std::time(0);  // t is an integer type
-	
+	int64_t ts_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
 	// Multi-threading
 	// https://stackoverflow.com/a/15717075
 	pthread_t threads[parser.n_privates];
@@ -100,7 +99,7 @@ int main() {
 		}
 	}
 
-	fire_commands(parser.commands, t);
+	fire_commands(parser.commands, ts_start);
 
 	for (int i = 0; i < parser.n_privates; i++) {
 		pthread_join(threads[i], NULL);
