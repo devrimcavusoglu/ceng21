@@ -1,4 +1,7 @@
 #include <chrono>
+#include <signal.h>
+#include <fcntl.h>
+#include <sys/types.h>
 
 #include "parser.hpp"
 
@@ -44,19 +47,35 @@ int time_elapsed(int64_t ts_start) {
 
 
 // Starts sending commands (main thread)
-void fire_commands(std::vector<Command> &commands, int64_t ts_start) {
+void fire_commands(pthread_t *threads, int n_threads, std::vector<Command> &commands, int64_t ts_start) {
 	std::time_t t;
 
 	for (int i = 0; i < commands.size(); i++) {
 		while (time_elapsed(ts_start) <= commands[i].notify_time);
-		take_action.store(commands[i].action);
-		take_action.notify_all();
+		if (commands[i].action == hw2_actions::ORDER_BREAK) {
+			for (int t = 0; t < n_threads; t++)
+				pthread_kill(threads[i], SIGABRT);
+		}
+		else if (commands[i].action == hw2_actions::ORDER_STOP) {
+			for (int t = 0; t < n_threads; t++)
+				pthread_kill(threads[i], SIGABRT);
+		}
 		hw2_notify(commands[i].action, 0, 0, 0);
 	}
 }
 
+static void signalHandler(int signum) {
+	if (signum == SIGABRT)
+		std::cout << "Caught BREAK signal (" << signum << ")\n";
+}
+
 
 void *start(void* arguments) {
+	sigset_t m;
+    sigemptyset(&m);
+    sigaddset(&m, SIGABRT);
+    int signo;
+
 	thargs_t *args = (thargs_t*)arguments;
 	Private *pvt = args->pvt;
 	// Notify ready
@@ -91,6 +110,15 @@ int main() {
 	}
 	G = parser.grid;
 
+	struct sigaction sa;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_handler = signalHandler;
+    sigaction(SIGABRT, &sa, NULL);
+
+    sigset_t n;
+    sigemptyset(&n);
+    sigaddset(&n, SIGABRT);
+
 	// initialize notifier & get start_time
 	hw2_init_notifier();
 	int64_t ts_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -110,7 +138,7 @@ int main() {
 		}
 	}
 
-	fire_commands(parser.commands, ts_start);
+	fire_commands(threads, parser.n_privates, parser.commands, ts_start);
 
 	for (int i = 0; i < parser.n_privates; i++) {
 		pthread_join(threads[i], NULL);
