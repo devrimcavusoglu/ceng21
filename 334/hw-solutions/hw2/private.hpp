@@ -1,6 +1,7 @@
 #ifndef PRIVATE_HPP
 #define PRIVATE_HPP
 
+#include <atomic>
 #include <iostream>
 #include <memory>
 #include <ostream>
@@ -29,11 +30,26 @@ public:
 	// Private starts collecting zones one-by-one
 	void start_collecting(
 		std::vector<std::vector<int> > &grid, 
-		std::vector<std::unique_ptr<std::binary_semaphore>> &sem
+		std::vector<std::unique_ptr<std::binary_semaphore>> &sem,
+		std::atomic<hw2_actions> &take_action
 	);
 
 	// Triggers private to collect cell=(x,y) from the grid.
-	void collect_zone(std::vector<std::vector<int> > &grid, int x, int y);
+	bool collect_zone(
+		std::vector<std::vector<int> > &grid,
+		std::vector<std::unique_ptr<std::binary_semaphore>> &sem, 
+		int x, 
+		int y,
+		std::atomic<hw2_actions> &take_action
+	);
+
+	hw2_actions obey_command(
+		std::atomic<hw2_actions> &take_action,
+		std::vector<std::unique_ptr<std::binary_semaphore>> &sem, 
+		const int x, 
+		const int y, 
+		const int n_col
+	);
 
 	// Actually we need to check for intersection for locks & unlocks to
 	// better utilize collection of cigbutts.

@@ -9,6 +9,9 @@ std::vector<std::vector<int>> G;
 // Init Lock
 std::vector<std::unique_ptr<std::binary_semaphore>> S;
 
+// Commands signals part-2
+std::atomic<hw2_actions> take_action{};
+
 
 template <class T>
 void print_2darr(std::vector<std::vector<T> > &arr) {
@@ -33,16 +36,21 @@ typedef struct thread_arguments {
 } thargs_t;
 
 
+
+// Returns elapsed time until now from ts_start
 int time_elapsed(int64_t ts_start) {
 	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - ts_start;
 }
 
 
+// Starts sending commands (main thread)
 void fire_commands(std::vector<Command> &commands, int64_t ts_start) {
 	std::time_t t;
 	for (int i = 0; i < commands.size(); i++) {
 		while (time_elapsed(ts_start) <= commands[i].notify_time);
 		hw2_notify(commands[i].action, 0, 0, 0);
+		take_action.store(commands[i].action);
+		take_action.notify_all();
 	}
 }
 
@@ -50,7 +58,7 @@ void fire_commands(std::vector<Command> &commands, int64_t ts_start) {
 void *start(void* arguments) {
 	thargs_t *args = (thargs_t*)arguments;
 	Private *pvt = args->pvt;
-    pvt->start_collecting(G, S);
+	pvt->start_collecting(G, S, take_action);
     return NULL;
 }
 
@@ -80,7 +88,7 @@ int main() {
 	}
 	G = parser.grid;
 
-	// initialize notifier
+	// initialize notifier & get start_time
 	hw2_init_notifier();
 	int64_t ts_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
