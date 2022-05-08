@@ -16,20 +16,25 @@ void Private::start_collecting(
 	std::vector<std::unique_ptr<std::binary_semaphore>> &sem,
 	std::atomic<hw2_actions> &take_action
 ) {
-	// Notify ready
-	hw2_notify(hw2_actions::PROPER_PRIVATE_CREATED, this->id, 0, 0);
-
-	bool should_cont;
+	bool area_cleared;
 	for (int i = 0; i < this->zones.size(); i++) {
 		const int x = this->zones[i].first;
 		const int y = this->zones[i].second;
 		const int n_col = grid[0].size();
 
 		this->lock_area(sem, x, y, n_col);
-		should_cont = this->collect_zone(grid, sem, x, y, take_action);
-		if (should_cont)
-			return;
+		area_cleared = this->collect_zone(grid, sem, x, y, take_action);
+		if (!area_cleared) {
+			take_action.wait(hw2_actions::ORDER_BREAK);
+			if (take_action.load() == hw2_actions::ORDER_CONTINUE) {
+				hw2_notify(hw2_actions::PROPER_PRIVATE_CONTINUED, this->id, 0, 0);
+				return this->start_collecting(grid, sem, take_action);
+			}
+			else // stop cmd
+				return;
+		}
 		this->unlock_area(sem, x, y, n_col);
+		hw2_notify(hw2_actions::PROPER_PRIVATE_CLEARED, this->id, 0, 0);
 	}
 
 	// Notify exit
@@ -46,7 +51,9 @@ bool Private::collect_zone(
 	for (int i = x; i < x+this->collect_area.first; i++) {
 		for (int j = y; j < y+this->collect_area.second; j++) {
 			while (grid[i][j] > 0) {
-				if (this->obey_command(take_action, sem, x, y, grid[0].size()) == hw2_actions::ORDER_STOP) return false;
+				hw2_actions action_state = this->obey_command(take_action, sem, x, y, grid[0].size()); 
+				if (action_state == hw2_actions::ORDER_STOP or action_state == hw2_actions::ORDER_BREAK) 
+					return false;
 				Sleep(this->collect_time);
 				grid[i][j]--;
 				hw2_notify(hw2_actions::PROPER_PRIVATE_GATHERED, this->id, i, j);
@@ -63,13 +70,13 @@ hw2_actions Private::obey_command(
 	const int y, 
 	const int n_col
 ) {
-	take_action.wait(hw2_actions::ORDER_CONTINUE);
 	if (take_action.load() == hw2_actions::ORDER_STOP) {
-		std::cout << "Im here..\n";
+		hw2_notify(hw2_actions::PROPER_PRIVATE_STOPPED, this->id, 0, 0);
 		this->unlock_area(sem, x, y, n_col);
 	}
-	else if (take_action.load() == hw2_actions::ORDER_BREAK) {
-		take_action.wait(hw2_actions::ORDER_BREAK);
+	if (take_action.load() == hw2_actions::ORDER_BREAK) {
+		hw2_notify(hw2_actions::PROPER_PRIVATE_TOOK_BREAK, this->id, 0, 0);
+		this->unlock_area(sem, x, y, n_col);
 	}
 	return take_action.load();
 }
@@ -98,5 +105,4 @@ void Private::unlock_area(
 		for (int j = y; j < y+this->collect_area.second; j++) 
 			sem.at(i*n_col + j)->release();
 	}
-	hw2_notify(hw2_actions::PROPER_PRIVATE_CLEARED, this->id, 0, 0);
 }

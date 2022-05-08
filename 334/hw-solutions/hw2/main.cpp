@@ -10,7 +10,7 @@ std::vector<std::vector<int>> G;
 std::vector<std::unique_ptr<std::binary_semaphore>> S;
 
 // Commands signals part-2
-std::atomic<hw2_actions> take_action{};
+std::atomic<hw2_actions> take_action{hw2_actions::ORDER_CONTINUE};
 
 
 template <class T>
@@ -46,11 +46,12 @@ int time_elapsed(int64_t ts_start) {
 // Starts sending commands (main thread)
 void fire_commands(std::vector<Command> &commands, int64_t ts_start) {
 	std::time_t t;
+
 	for (int i = 0; i < commands.size(); i++) {
 		while (time_elapsed(ts_start) <= commands[i].notify_time);
-		hw2_notify(commands[i].action, 0, 0, 0);
 		take_action.store(commands[i].action);
 		take_action.notify_all();
+		hw2_notify(commands[i].action, 0, 0, 0);
 	}
 }
 
@@ -58,6 +59,8 @@ void fire_commands(std::vector<Command> &commands, int64_t ts_start) {
 void *start(void* arguments) {
 	thargs_t *args = (thargs_t*)arguments;
 	Private *pvt = args->pvt;
+	// Notify ready
+	hw2_notify(hw2_actions::PROPER_PRIVATE_CREATED, pvt->id, 0, 0);
 	pvt->start_collecting(G, S, take_action);
     return NULL;
 }
