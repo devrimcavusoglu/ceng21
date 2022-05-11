@@ -9,7 +9,6 @@
 #include <vector>
 #include <unistd.h>
 #include <utility>
-#include <windows.h>
 
 #include "hw2_output.h"
 
@@ -17,9 +16,12 @@
 class Private {
 public:
 	std::vector<std::pair<int, int>> zones;
+	std::pair<int, int> current_zone = std::make_pair(-1, -1);
 	int id;
 	std::pair<int, int> collect_area;
-	int collect_time;
+	unsigned int collect_time;
+	unsigned long tid = 0;
+	int n_col;
 
 	// Constructor for private
 	Private(int id, int x, int y, int t);
@@ -31,7 +33,7 @@ public:
 	void start_collecting(
 		std::vector<std::vector<int> > &grid, 
 		std::vector<std::unique_ptr<std::binary_semaphore>> &sem,
-		std::atomic<hw2_actions> &take_action
+		std::atomic<bool> &should_continue
 	);
 
 	// Triggers private to collect cell=(x,y) from the grid.
@@ -40,15 +42,7 @@ public:
 		std::vector<std::unique_ptr<std::binary_semaphore>> &sem, 
 		int x, 
 		int y,
-		std::atomic<hw2_actions> &take_action
-	);
-
-	hw2_actions obey_command(
-		std::atomic<hw2_actions> &take_action,
-		std::vector<std::unique_ptr<std::binary_semaphore>> &sem, 
-		const int x, 
-		const int y, 
-		const int n_col
+		std::atomic<bool> &should_continue
 	);
 
 	// Actually we need to check for intersection for locks & unlocks to
@@ -60,16 +54,15 @@ public:
 	void lock_area(
 		std::vector<std::unique_ptr<std::binary_semaphore>> &sem, 
 		const int x, 
-		const int y, 
-		const int n_col
+		const int y
 	);
 
 	void unlock_area(
-		std::vector<std::unique_ptr<std::binary_semaphore>> &sem, 
-		const int x, 
-		const int y, 
-		const int n_col
+		std::vector<std::unique_ptr<std::binary_semaphore>> &sem 
 	);
+
+	// Returns true if private is currently working.
+	bool working();
 
 	friend std::ostream& operator<<(std::ostream& os, const Private& pvt) {
 		os << "  Private #" << pvt.id  << " | collect_area: " << pvt.collect_area.first << "x" << pvt.collect_area.second << 
@@ -80,5 +73,7 @@ public:
 		return os;
 	}
 };
+
+Private *private_by_tid(std::vector<Private> &privates, unsigned long tid);
 
 #endif //PRIVATE_HPP

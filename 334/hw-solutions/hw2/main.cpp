@@ -6,6 +6,9 @@
 #include "parser.hpp"
 
 
+// Init Privates
+std::vector<Private> P;
+
 // Init Grid
 std::vector<std::vector<int>> G;
 
@@ -13,7 +16,7 @@ std::vector<std::vector<int>> G;
 std::vector<std::unique_ptr<std::binary_semaphore>> S;
 
 // Commands signals part-2
-std::atomic<hw2_actions> take_action{hw2_actions::ORDER_CONTINUE};
+std::atomic<bool> should_continue{true};
 
 
 template <class T>
@@ -34,9 +37,9 @@ void print_arr(std::vector<T> &arr) {
 }
 
 
-typedef struct thread_arguments {
+typedef struct thread_args {
     Private *pvt;
-} thargs_t;
+} thread_args_t;
 
 
 
@@ -47,40 +50,52 @@ int time_elapsed(int64_t ts_start) {
 
 
 // Starts sending commands (main thread)
-void fire_commands(pthread_t *threads, int n_threads, std::vector<Command> &commands, int64_t ts_start) {
+void fire_commands(pthread_t *threads, std::vector<Command> &commands, int64_t ts_start) {
 	std::time_t t;
 
 	for (int i = 0; i < commands.size(); i++) {
 		while (time_elapsed(ts_start) <= commands[i].notify_time);
+		hw2_notify(commands[i].action, 0, 0, 0);
 		if (commands[i].action == hw2_actions::ORDER_BREAK) {
-			for (int t = 0; t < n_threads; t++)
-				pthread_kill(threads[i], SIGABRT);
+			should_continue.store(false);
+			for (int t = 0; t < P.size(); t++)
+				pthread_kill(threads[t], SIGUSR1);
 		}
 		else if (commands[i].action == hw2_actions::ORDER_STOP) {
-			for (int t = 0; t < n_threads; t++)
-				pthread_kill(threads[i], SIGABRT);
+			for (int t = 0; t < P.size(); t++)
+				pthread_cancel(threads[t]);
 		}
-		hw2_notify(commands[i].action, 0, 0, 0);
+		else {
+			should_continue.store(true);
+			should_continue.notify_all();
+		}
 	}
 }
 
 static void signalHandler(int signum) {
-	if (signum == SIGABRT)
-		std::cout << "Caught BREAK signal (" << signum << ")\n";
+	if (signum == SIGUSR1) {
+		Private *p = private_by_tid(P, pthread_self());
+		if (!p)
+			return;
+		hw2_notify(hw2_actions::PROPER_PRIVATE_TOOK_BREAK, p->id, 0, 0);
+		p->unlock_area(S);
+		should_continue.wait(false);
+		hw2_notify(hw2_actions::PROPER_PRIVATE_CONTINUED, p->id, 0, 0);
+	}
 }
 
 
 void *start(void* arguments) {
 	sigset_t m;
     sigemptyset(&m);
-    sigaddset(&m, SIGABRT);
+    sigaddset(&m, SIGUSR1);
     int signo;
 
-	thargs_t *args = (thargs_t*)arguments;
+	thread_args_t *args = (thread_args_t*)arguments;
 	Private *pvt = args->pvt;
 	// Notify ready
 	hw2_notify(hw2_actions::PROPER_PRIVATE_CREATED, pvt->id, 0, 0);
-	pvt->start_collecting(G, S, take_action);
+	pvt->start_collecting(G, S, should_continue);
     return NULL;
 }
 
@@ -109,15 +124,12 @@ int main() {
 		}
 	}
 	G = parser.grid;
+	P = parser.privates;
 
 	struct sigaction sa;
     sigemptyset(&sa.sa_mask);
     sa.sa_handler = signalHandler;
-    sigaction(SIGABRT, &sa, NULL);
-
-    sigset_t n;
-    sigemptyset(&n);
-    sigaddset(&n, SIGABRT);
+    sigaction(SIGUSR1, &sa, NULL);
 
 	// initialize notifier & get start_time
 	hw2_init_notifier();
@@ -125,12 +137,12 @@ int main() {
 
 	// Multi-threading
 	// https://stackoverflow.com/a/15717075
-	pthread_t threads[parser.n_privates];
-	thargs_t args[parser.n_privates];
+	pthread_t threads[P.size()];
+	thread_args_t args[P.size()];
 	int rc;
 
-	for(int i = 0; i < parser.n_privates; i++ ) {
-		args[i].pvt = &parser.privates[i];
+	for(int i = 0; i < P.size(); i++ ) {
+		args[i].pvt = &P[i];
 		rc = pthread_create(&threads[i], NULL, &start, &args[i]);
 		if (rc) {
 		 std::cerr << "Error:unable to create thread," << rc << std::endl;
@@ -138,9 +150,9 @@ int main() {
 		}
 	}
 
-	fire_commands(threads, parser.n_privates, parser.commands, ts_start);
+	fire_commands(threads, parser.commands, ts_start);
 
-	for (int i = 0; i < parser.n_privates; i++) {
+	for (int i = 0; i < P.size(); i++) {
 		pthread_join(threads[i], NULL);
 	}
 
