@@ -63,34 +63,36 @@ void fire_commands(pthread_t *threads, std::vector<Command> &commands, int64_t t
 		}
 		else if (commands[i].action == hw2_actions::ORDER_STOP) {
 			for (int t = 0; t < P.size(); t++)
-				pthread_cancel(threads[t]);
+				pthread_kill(threads[t], SIGUSR2);
 		}
 		else {
-			should_continue.store(true);
-			should_continue.notify_all();
+			if (!should_continue.load()) {
+				should_continue.store(true);
+				should_continue.notify_all();
+			}
 		}
 	}
 }
 
 static void signalHandler(int signum) {
+	Private *p = private_by_tid(P, pthread_self());
+	if (!p) // main thread
+		return;
 	if (signum == SIGUSR1) {
-		Private *p = private_by_tid(P, pthread_self());
-		if (!p)
-			return;
 		hw2_notify(hw2_actions::PROPER_PRIVATE_TOOK_BREAK, p->id, 0, 0);
 		p->unlock_area(S);
 		should_continue.wait(false);
 		hw2_notify(hw2_actions::PROPER_PRIVATE_CONTINUED, p->id, 0, 0);
 	}
+	else if (signum == SIGUSR2) {
+		p->unlock_area(S);
+		hw2_notify(hw2_actions::PROPER_PRIVATE_STOPPED, p->id, 0, 0);
+		pthread_exit(NULL);
+	}
 }
 
 
 void *start(void* arguments) {
-	sigset_t m;
-    sigemptyset(&m);
-    sigaddset(&m, SIGUSR1);
-    int signo;
-
 	thread_args_t *args = (thread_args_t*)arguments;
 	Private *pvt = args->pvt;
 	// Notify ready
@@ -130,6 +132,7 @@ int main() {
     sigemptyset(&sa.sa_mask);
     sa.sa_handler = signalHandler;
     sigaction(SIGUSR1, &sa, NULL);
+    sigaction(SIGUSR2, &sa, NULL);
 
 	// initialize notifier & get start_time
 	hw2_init_notifier();

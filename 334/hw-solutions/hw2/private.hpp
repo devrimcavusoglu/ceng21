@@ -22,7 +22,9 @@ public:
 	std::pair<int, int> collect_area;
 	unsigned int collect_time;
 	unsigned long tid = 0;
-	std::binary_semaphore atomic_lock;
+
+	// TODO: Make lock/unlock uninterrupted but how ?
+	// std::binary_semaphore atomic_lock;
 
 
 	// Constructor for private
