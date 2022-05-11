@@ -18,10 +18,12 @@ public:
 	std::vector<std::pair<int, int>> zones;
 	std::pair<int, int> current_zone = std::make_pair(-1, -1);
 	int id;
+	int n_col;
 	std::pair<int, int> collect_area;
 	unsigned int collect_time;
 	unsigned long tid = 0;
-	int n_col;
+	std::binary_semaphore atomic_lock;
+
 
 	// Constructor for private
 	Private(int id, int x, int y, int t);
@@ -32,8 +34,7 @@ public:
 	// Private starts collecting zones one-by-one
 	void start_collecting(
 		std::vector<std::vector<int> > &grid, 
-		std::vector<std::unique_ptr<std::binary_semaphore>> &sem,
-		std::atomic<bool> &should_continue
+		std::vector<std::unique_ptr<std::binary_semaphore>> &sem
 	);
 
 	// Triggers private to collect cell=(x,y) from the grid.
@@ -41,8 +42,7 @@ public:
 		std::vector<std::vector<int> > &grid,
 		std::vector<std::unique_ptr<std::binary_semaphore>> &sem, 
 		int x, 
-		int y,
-		std::atomic<bool> &should_continue
+		int y
 	);
 
 	// Actually we need to check for intersection for locks & unlocks to

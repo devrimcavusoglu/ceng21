@@ -95,7 +95,7 @@ void *start(void* arguments) {
 	Private *pvt = args->pvt;
 	// Notify ready
 	hw2_notify(hw2_actions::PROPER_PRIVATE_CREATED, pvt->id, 0, 0);
-	pvt->start_collecting(G, S, should_continue);
+	pvt->start_collecting(G, S);
     return NULL;
 }
 

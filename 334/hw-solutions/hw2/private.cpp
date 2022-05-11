@@ -22,8 +22,7 @@ void Private::addZone(int x, int y) {
 
 void Private::start_collecting(
 	std::vector<std::vector<int> > &grid, 
-	std::vector<std::unique_ptr<std::binary_semaphore>> &sem,
-	std::atomic<bool> &should_continue
+	std::vector<std::unique_ptr<std::binary_semaphore>> &sem
 ) {
 	this->tid = pthread_self();
 	this->n_col = grid[0].size();
@@ -33,9 +32,9 @@ void Private::start_collecting(
 		const int y = this->zones[i].second;
 
 		this->lock_area(sem, x, y);
-		area_cleared = this->collect_zone(grid, sem, x, y, should_continue);
+		area_cleared = this->collect_zone(grid, sem, x, y);
 		if (!area_cleared) {
-			return this->start_collecting(grid, sem, should_continue);
+			return this->start_collecting(grid, sem);
 		}
 		this->unlock_area(sem);
 		hw2_notify(hw2_actions::PROPER_PRIVATE_CLEARED, this->id, 0, 0);
@@ -49,8 +48,7 @@ bool Private::collect_zone(
 	std::vector<std::vector<int> > &grid,
 	std::vector<std::unique_ptr<std::binary_semaphore>> &sem, 
 	int x, 
-	int y,
-	std::atomic<bool> &should_continue
+	int y
 ) {
 	for (int i = x; i < x+this->collect_area.first; i++) {
 		for (int j = y; j < y+this->collect_area.second; j++) {
