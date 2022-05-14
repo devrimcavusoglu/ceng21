@@ -93,11 +93,9 @@ void *start(void* arguments) {
 
 
 static void signalHandler(int signum) {
-	std::cout << "Thread id: " << pthread_self() << std::endl;
 	Private *p = private_by_tid(P, pthread_self());
-	if (!p) // main thread
+	if (!p) // error
 		return;
-	std::cout << "Private tid: " << p->tid << std::endl;
 	if (signum == SIGUSR1) {
 		if (p->working())
 			hw2_notify(hw2_actions::PROPER_PRIVATE_TOOK_BREAK, p->id, 0, 0);
