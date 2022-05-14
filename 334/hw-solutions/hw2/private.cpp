@@ -53,7 +53,7 @@ bool Private::collect_zone(
 	for (int i = x; i < x+this->collect_area.first; i++) {
 		for (int j = y; j < y+this->collect_area.second; j++) {
 			while (grid[i][j] > 0) {
-				if (this->current_zone.first == -1)
+				if (!this->working())
 					return false;
 				usleep(this->collect_time * 1000);
 				grid[i][j]--;

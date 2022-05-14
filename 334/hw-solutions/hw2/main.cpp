@@ -57,13 +57,20 @@ void fire_commands(pthread_t *threads, std::vector<Command> &commands, int64_t t
 		while (time_elapsed(ts_start) <= commands[i].notify_time);
 		hw2_notify(commands[i].action, 0, 0, 0);
 		if (commands[i].action == hw2_actions::ORDER_BREAK) {
-			should_continue.store(false);
-			for (int t = 0; t < P.size(); t++)
-				pthread_kill(threads[t], SIGUSR1);
+			if (should_continue.load()) {
+				should_continue.store(false);
+				for (int t = 0; t < P.size(); t++)
+					pthread_kill(threads[t], SIGUSR1);
+			}
 		}
 		else if (commands[i].action == hw2_actions::ORDER_STOP) {
-			for (int t = 0; t < P.size(); t++)
-				pthread_kill(threads[t], SIGUSR2);
+			for (int t = 0; t < P.size(); t++) {
+				P[t].unlock_area(S);
+				hw2_notify(hw2_actions::PROPER_PRIVATE_STOPPED, P[t].id, 0, 0);
+				should_continue.store(true);
+				should_continue.notify_all();
+				pthread_cancel(threads[t]);
+			}
 		}
 		else {
 			if (!should_continue.load()) {
@@ -71,23 +78,6 @@ void fire_commands(pthread_t *threads, std::vector<Command> &commands, int64_t t
 				should_continue.notify_all();
 			}
 		}
-	}
-}
-
-static void signalHandler(int signum) {
-	Private *p = private_by_tid(P, pthread_self());
-	if (!p) // main thread
-		return;
-	if (signum == SIGUSR1) {
-		hw2_notify(hw2_actions::PROPER_PRIVATE_TOOK_BREAK, p->id, 0, 0);
-		p->unlock_area(S);
-		should_continue.wait(false);
-		hw2_notify(hw2_actions::PROPER_PRIVATE_CONTINUED, p->id, 0, 0);
-	}
-	else if (signum == SIGUSR2) {
-		p->unlock_area(S);
-		hw2_notify(hw2_actions::PROPER_PRIVATE_STOPPED, p->id, 0, 0);
-		pthread_exit(NULL);
 	}
 }
 
@@ -99,6 +89,23 @@ void *start(void* arguments) {
 	hw2_notify(hw2_actions::PROPER_PRIVATE_CREATED, pvt->id, 0, 0);
 	pvt->start_collecting(G, S);
     return NULL;
+}
+
+
+static void signalHandler(int signum) {
+	std::cout << "Thread id: " << pthread_self() << std::endl;
+	Private *p = private_by_tid(P, pthread_self());
+	if (!p) // main thread
+		return;
+	std::cout << "Private tid: " << p->tid << std::endl;
+	if (signum == SIGUSR1) {
+		if (p->working())
+			hw2_notify(hw2_actions::PROPER_PRIVATE_TOOK_BREAK, p->id, 0, 0);
+		p->unlock_area(S);
+		should_continue.wait(false);
+		if (!p->working())
+			hw2_notify(hw2_actions::PROPER_PRIVATE_CONTINUED, p->id, 0, 0);
+	}
 }
 
 
@@ -117,9 +124,6 @@ int main() {
 	}
 	std::cout << "=============OUT===========\n";
 
-	// Lock for continue/stop
-	//std::atomic<int> counter = parser.n_privates;
-
 	for (int i = 0; i < parser.grid_size[0]; i++) {
 		for (int j = 0; j < parser.grid_size[1]; j++) {
 			S.emplace_back(std::make_unique<std::binary_semaphore>(1));
@@ -128,11 +132,14 @@ int main() {
 	G = parser.grid;
 	P = parser.privates;
 
+
+	// see https://stackoverflow.com/a/62857783
 	struct sigaction sa;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_handler = signalHandler;
-    sigaction(SIGUSR1, &sa, NULL);
-    sigaction(SIGUSR2, &sa, NULL);
+	// sigset_t set;
+	sigemptyset(&sa.sa_mask);
+	sigaddset(&sa.sa_mask, SIGUSR1);
+	sa.sa_handler = signalHandler;
+	sigaction(SIGUSR1, &sa, NULL);
 
 	// initialize notifier & get start_time
 	hw2_init_notifier();
@@ -158,6 +165,7 @@ int main() {
 	for (int i = 0; i < P.size(); i++) {
 		pthread_join(threads[i], NULL);
 	}
+
 
 	std::cout << "=================\n";
 	print_2darr(G);
