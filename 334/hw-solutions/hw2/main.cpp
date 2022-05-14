@@ -1,3 +1,4 @@
+#include <atomic>
 #include <chrono>
 #include <signal.h>
 #include <fcntl.h>
@@ -6,8 +7,9 @@
 #include "parser.hpp"
 
 
-// Init Privates
-std::vector<Private> P;
+// Init ProperPrivates
+std::vector<ProperPrivate> P;
+std::vector<SneakySmoker> SS;
 
 // Init Grid
 std::vector<std::vector<int>> G;
@@ -38,7 +40,7 @@ void print_arr(std::vector<T> &arr) {
 
 
 typedef struct thread_args {
-    Private *pvt;
+    ProperPrivate *pvt;
 } thread_args_t;
 
 
@@ -84,7 +86,7 @@ void fire_commands(pthread_t *threads, std::vector<Command> &commands, int64_t t
 
 void *start(void* arguments) {
 	thread_args_t *args = (thread_args_t*)arguments;
-	Private *pvt = args->pvt;
+	ProperPrivate *pvt = args->pvt;
 	// Notify ready
 	hw2_notify(hw2_actions::PROPER_PRIVATE_CREATED, pvt->id, 0, 0);
 	pvt->start_collecting(G, S);
@@ -93,15 +95,15 @@ void *start(void* arguments) {
 
 
 static void signalHandler(int signum) {
-	Private *p = private_by_tid(P, pthread_self());
+	ProperPrivate *p = private_by_tid(P, pthread_self());
 	if (!p) // error
 		return;
 	if (signum == SIGUSR1) {
-		if (p->working())
+		if (p->is_working())
 			hw2_notify(hw2_actions::PROPER_PRIVATE_TOOK_BREAK, p->id, 0, 0);
 		p->unlock_area(S);
 		should_continue.wait(false);
-		if (!p->working())
+		if (!p->is_working())
 			hw2_notify(hw2_actions::PROPER_PRIVATE_CONTINUED, p->id, 0, 0);
 	}
 }
@@ -114,7 +116,7 @@ int main() {
 	std::cout << "=============OUT===========\n";
 	std::cout << "Grid size: " << parser.grid_size[0] << " x " << parser.grid_size[1] << std::endl;
 	print_2darr(parser.grid);
-	std::cout << "Privates: " << parser.privates.size() << std::endl;
+	std::cout << "ProperPrivates: " << parser.privates.size() << std::endl;
 	print_arr(parser.privates);
 	std::cout << "Commands: " << parser.commands.size() << std::endl;
 	for (int i = 0; i < parser.commands.size(); i++) {

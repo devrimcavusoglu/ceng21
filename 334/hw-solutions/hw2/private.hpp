@@ -1,7 +1,6 @@
 #ifndef PRIVATE_HPP
 #define PRIVATE_HPP
 
-#include <atomic>
 #include <iostream>
 #include <memory>
 #include <ostream>
@@ -15,37 +14,18 @@
 
 class Private {
 public:
-	std::vector<std::pair<int, int>> zones;
-	std::pair<int, int> current_zone = std::make_pair(-1, -1);
 	int id;
 	int n_col;
-	std::pair<int, int> collect_area;
-	unsigned int collect_time;
+	unsigned int working_time;
 	unsigned long tid = 0;
+	std::vector<std::pair<int, int>> zones;
+	std::pair<int, int> working_area;
+	std::pair<int, int> current_zone = std::make_pair(-1, -1);
 
-	// TODO: Make lock/unlock uninterrupted but how ?
-	// std::binary_semaphore atomic_lock;
-
-
-	// Constructor for private
 	Private(int id, int x, int y, int t);
 
 	// Add left corner cell of duty zone for private.
 	void addZone(int x, int y);
-
-	// Private starts collecting zones one-by-one
-	void start_collecting(
-		std::vector<std::vector<int> > &grid, 
-		std::vector<std::unique_ptr<std::binary_semaphore>> &sem
-	);
-
-	// Triggers private to collect cell=(x,y) from the grid.
-	bool collect_zone(
-		std::vector<std::vector<int> > &grid,
-		std::vector<std::unique_ptr<std::binary_semaphore>> &sem, 
-		int x, 
-		int y
-	);
 
 	// Actually we need to check for intersection for locks & unlocks to
 	// better utilize collection of cigbutts.
@@ -63,19 +43,11 @@ public:
 		std::vector<std::unique_ptr<std::binary_semaphore>> &sem 
 	);
 
-	// Returns true if private is currently working.
-	bool working();
+	bool is_working();
 
-	friend std::ostream& operator<<(std::ostream& os, const Private& pvt) {
-		os << "  Private #" << pvt.id  << " | collect_area: " << pvt.collect_area.first << "x" << pvt.collect_area.second << 
-			" | collect_time: " << pvt.collect_time << std::endl;
-			for (int j = 0; j < pvt.zones.size(); j++) {
-				os << "\tZone " << j << ": (" << pvt.zones[j].first << ", " << pvt.zones[j].second << ")" << std::endl;
-			}
-		return os;
-	}
 };
 
-Private *private_by_tid(std::vector<Private> &privates, unsigned long tid);
+template <typename T>
+T *private_by_tid(std::vector<T> &privates, unsigned long tid);
 
 #endif //PRIVATE_HPP
