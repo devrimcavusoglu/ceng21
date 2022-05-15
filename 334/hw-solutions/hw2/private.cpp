@@ -1,14 +1,5 @@
 #include "private.hpp"
 
-template <typename T>
-T *private_by_tid(std::vector<T> &privates, unsigned long tid) {
-	for (int i = 0; i < privates.size(); i++) {
-		if (privates[i].tid == tid)
-			return &privates[i];
-	}
-	return NULL;
-}
-
 
 Private::Private(int id, int x, int y, int t) {
 	this->id = id;

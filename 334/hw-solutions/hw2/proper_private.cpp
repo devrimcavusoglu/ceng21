@@ -1,7 +1,7 @@
 #include "proper_private.hpp"
 
 
-void ProperPrivate::start_collecting(
+void ProperPrivate::_start_working(
 	std::vector<std::vector<int> > &grid, 
 	std::vector<std::unique_ptr<std::binary_semaphore>> &sem
 ) {
@@ -15,7 +15,7 @@ void ProperPrivate::start_collecting(
 		this->lock_area(sem, x, y);
 		area_cleared = this->collect_zone(grid, sem, x, y);
 		if (!area_cleared) {
-			return this->start_collecting(grid, sem);
+			return this->_start_working(grid, sem);
 		}
 		this->unlock_area(sem);
 		hw2_notify(hw2_actions::PROPER_PRIVATE_CLEARED, this->id, 0, 0);
@@ -25,6 +25,7 @@ void ProperPrivate::start_collecting(
 	hw2_notify(hw2_actions::PROPER_PRIVATE_EXITED, this->id, 0, 0);
 }
 
+// Triggers private to collect cell=(x,y) from the grid.
 bool ProperPrivate::collect_zone(
 	std::vector<std::vector<int> > &grid,
 	std::vector<std::unique_ptr<std::binary_semaphore>> &sem, 

@@ -24,6 +24,13 @@ public:
 
 	Private(int id, int x, int y, int t);
 
+	void start_working(
+		std::vector<std::vector<int> > &grid, 
+		std::vector<std::unique_ptr<std::binary_semaphore>> &sem
+	) {
+		this->_start_working(grid, sem);
+	}
+
 	// Add left corner cell of duty zone for private.
 	void addZone(int x, int y);
 
@@ -45,9 +52,22 @@ public:
 
 	bool is_working();
 
+private:
+	// Internal worker method called by `start_working`. 
+	// This method must be overridden in child classes.
+	virtual void _start_working(
+		std::vector<std::vector<int> > &grid, 
+		std::vector<std::unique_ptr<std::binary_semaphore>> &sem
+	) {}
 };
 
-template <typename T>
-T *private_by_tid(std::vector<T> &privates, unsigned long tid);
+template <class T>
+T *private_by_tid(std::vector<T> &privates, unsigned long tid) {
+	for (int i = 0; i < privates.size(); i++) {
+		if (privates[i].tid == tid)
+			return &privates[i];
+	}
+	return NULL;
+}
 
 #endif //PRIVATE_HPP

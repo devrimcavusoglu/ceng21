@@ -41,6 +41,7 @@ void print_arr(std::vector<T> &arr) {
 
 typedef struct thread_args {
     ProperPrivate *pvt;
+    SneakySmoker *smk;
 } thread_args_t;
 
 
@@ -84,18 +85,28 @@ void fire_commands(pthread_t *threads, std::vector<Command> &commands, int64_t t
 }
 
 
-void *start(void* arguments) {
+void *start_smoking(void* arguments) {
 	thread_args_t *args = (thread_args_t*)arguments;
-	ProperPrivate *pvt = args->pvt;
+	SneakySmoker *smoker = args->smk;
 	// Notify ready
-	hw2_notify(hw2_actions::PROPER_PRIVATE_CREATED, pvt->id, 0, 0);
-	pvt->start_collecting(G, S);
+	hw2_notify(hw2_actions::SNEAKY_SMOKER_CREATED, smoker->id, 0, 0);
+    return NULL;
+}
+
+
+
+void *start_collecting(void* arguments) {
+	thread_args_t *args = (thread_args_t*)arguments;
+	ProperPrivate *properpvt = args->pvt;
+	// Notify ready
+	hw2_notify(hw2_actions::PROPER_PRIVATE_CREATED, properpvt->id, 0, 0);
+	properpvt->start_working(G, S);
     return NULL;
 }
 
 
 static void signalHandler(int signum) {
-	ProperPrivate *p = private_by_tid(P, pthread_self());
+	ProperPrivate *p = private_by_tid<ProperPrivate>(P, pthread_self());
 	if (!p) // error
 		return;
 	if (signum == SIGUSR1) {
@@ -118,6 +129,8 @@ int main() {
 	print_2darr(parser.grid);
 	std::cout << "ProperPrivates: " << parser.privates.size() << std::endl;
 	print_arr(parser.privates);
+	std::cout << "SneakySmokers: " << parser.sneaky_smokers.size() << std::endl;
+	print_arr(parser.sneaky_smokers);
 	std::cout << "Commands: " << parser.commands.size() << std::endl;
 	for (int i = 0; i < parser.commands.size(); i++) {
 		std::cout << "Command #" << parser.commands[i].action << " at msec " << parser.commands[i].notify_time << std::endl;
@@ -131,6 +144,7 @@ int main() {
 	}
 	G = parser.grid;
 	P = parser.privates;
+	SS = parser.sneaky_smokers;
 
 
 	// see https://stackoverflow.com/a/62857783
@@ -147,23 +161,37 @@ int main() {
 
 	// Multi-threading
 	// https://stackoverflow.com/a/15717075
-	pthread_t threads[P.size()];
-	thread_args_t args[P.size()];
+	pthread_t thr_proper_privates[P.size()];
+	pthread_t thr_sneaky_smokers[P.size()];
+	thread_args_t pp_args[P.size()];
+	thread_args_t ss_args[SS.size()];
 	int rc;
 
 	for(int i = 0; i < P.size(); i++ ) {
-		args[i].pvt = &P[i];
-		rc = pthread_create(&threads[i], NULL, &start, &args[i]);
+		pp_args[i].pvt = &P[i];
+		rc = pthread_create(&thr_proper_privates[i], NULL, &start_collecting, &pp_args[i]);
 		if (rc) {
 		 std::cerr << "Error:unable to create thread," << rc << std::endl;
 		 exit(-1);
 		}
 	}
 
-	fire_commands(threads, parser.commands, ts_start);
+	for(int i = 0; i < SS.size(); i++ ) {
+		ss_args[i].smk = &SS[i];
+		rc = pthread_create(&thr_sneaky_smokers[i], NULL, &start_smoking, &ss_args[i]);
+		if (rc) {
+		 std::cerr << "Error:unable to create thread," << rc << std::endl;
+		 exit(-1);
+		}
+	}
+
+	fire_commands(thr_proper_privates, parser.commands, ts_start);
 
 	for (int i = 0; i < P.size(); i++) {
-		pthread_join(threads[i], NULL);
+		pthread_join(thr_proper_privates[i], NULL);
+	}
+	for (int i = 0; i < P.size(); i++) {
+		pthread_join(thr_sneaky_smokers[i], NULL);
 	}
 
 

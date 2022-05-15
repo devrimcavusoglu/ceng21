@@ -23,6 +23,20 @@ public:
 			}
 		return os;
 	}
+
+private:
+	void _start_working(
+		std::vector<std::vector<int> > &grid, 
+		std::vector<std::unique_ptr<std::binary_semaphore>> &sem
+	) override {}
+
+	// Triggers private to collect cell=(x,y) from the grid.
+	bool collect_zone(
+		std::vector<std::vector<int> > &grid,
+		std::vector<std::unique_ptr<std::binary_semaphore>> &sem, 
+		int x, 
+		int y
+	);
 };
 
 #endif //SMOKER_HPP
