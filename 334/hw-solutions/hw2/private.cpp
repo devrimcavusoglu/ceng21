@@ -26,7 +26,6 @@ void Private::lock_area(
 		} 
 	}
 	this->current_zone = std::make_pair(x, y);
-	hw2_notify(hw2_actions::PROPER_PRIVATE_ARRIVED, this->id, x, y);
 }
 
 void Private::unlock_area(

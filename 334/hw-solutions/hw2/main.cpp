@@ -39,10 +39,10 @@ void print_arr(std::vector<T> &arr) {
 }
 
 
-typedef struct thread_args {
-    ProperPrivate *pvt;
-    SneakySmoker *smk;
-} thread_args_t;
+template <class T>
+struct thread_args_t {
+    T *pvt;
+};
 
 
 
@@ -53,9 +53,7 @@ int time_elapsed(int64_t ts_start) {
 
 
 // Starts sending commands (main thread)
-void fire_commands(pthread_t *threads, std::vector<Command> &commands, int64_t ts_start) {
-	std::time_t t;
-
+void fire_commands(pthread_t *thr_proper_privates, pthread_t *thr_sneaky_smokers, std::vector<Command> &commands, int64_t ts_start) {
 	for (int i = 0; i < commands.size(); i++) {
 		while (time_elapsed(ts_start) <= commands[i].notify_time);
 		hw2_notify(commands[i].action, 0, 0, 0);
@@ -63,7 +61,7 @@ void fire_commands(pthread_t *threads, std::vector<Command> &commands, int64_t t
 			if (should_continue.load()) {
 				should_continue.store(false);
 				for (int t = 0; t < P.size(); t++)
-					pthread_kill(threads[t], SIGUSR1);
+					pthread_kill(thr_proper_privates[t], SIGUSR1);
 			}
 		}
 		else if (commands[i].action == hw2_actions::ORDER_STOP) {
@@ -72,7 +70,12 @@ void fire_commands(pthread_t *threads, std::vector<Command> &commands, int64_t t
 				hw2_notify(hw2_actions::PROPER_PRIVATE_STOPPED, P[t].id, 0, 0);
 				should_continue.store(true);
 				should_continue.notify_all();
-				pthread_cancel(threads[t]);
+				pthread_cancel(thr_proper_privates[t]);
+			}
+			for (int t = 0; t < SS.size(); t++) {
+				P[t].unlock_area(S);
+				hw2_notify(hw2_actions::SNEAKY_SMOKER_STOPPED, P[t].id, 0, 0);
+				pthread_cancel(thr_sneaky_smokers[t]);
 			}
 		}
 		else {
@@ -86,17 +89,18 @@ void fire_commands(pthread_t *threads, std::vector<Command> &commands, int64_t t
 
 
 void *start_smoking(void* arguments) {
-	thread_args_t *args = (thread_args_t*)arguments;
-	SneakySmoker *smoker = args->smk;
+	thread_args_t<SneakySmoker> *args = (thread_args_t<SneakySmoker>*)arguments;
+	SneakySmoker *smoker = args->pvt;
 	// Notify ready
 	hw2_notify(hw2_actions::SNEAKY_SMOKER_CREATED, smoker->id, 0, 0);
+	smoker->start_working(G, S);
     return NULL;
 }
 
 
 
 void *start_collecting(void* arguments) {
-	thread_args_t *args = (thread_args_t*)arguments;
+	thread_args_t<ProperPrivate> *args = (thread_args_t<ProperPrivate>*)arguments;
 	ProperPrivate *properpvt = args->pvt;
 	// Notify ready
 	hw2_notify(hw2_actions::PROPER_PRIVATE_CREATED, properpvt->id, 0, 0);
@@ -107,7 +111,7 @@ void *start_collecting(void* arguments) {
 
 static void signalHandler(int signum) {
 	ProperPrivate *p = private_by_tid<ProperPrivate>(P, pthread_self());
-	if (!p) // error
+	if (!p) // error or smoker
 		return;
 	if (signum == SIGUSR1) {
 		if (p->is_working())
@@ -163,8 +167,8 @@ int main() {
 	// https://stackoverflow.com/a/15717075
 	pthread_t thr_proper_privates[P.size()];
 	pthread_t thr_sneaky_smokers[P.size()];
-	thread_args_t pp_args[P.size()];
-	thread_args_t ss_args[SS.size()];
+	thread_args_t<ProperPrivate> pp_args[P.size()];
+	thread_args_t<SneakySmoker> ss_args[SS.size()];
 	int rc;
 
 	for(int i = 0; i < P.size(); i++ ) {
@@ -177,7 +181,7 @@ int main() {
 	}
 
 	for(int i = 0; i < SS.size(); i++ ) {
-		ss_args[i].smk = &SS[i];
+		ss_args[i].pvt = &SS[i];
 		rc = pthread_create(&thr_sneaky_smokers[i], NULL, &start_smoking, &ss_args[i]);
 		if (rc) {
 		 std::cerr << "Error:unable to create thread," << rc << std::endl;
@@ -185,7 +189,7 @@ int main() {
 		}
 	}
 
-	fire_commands(thr_proper_privates, parser.commands, ts_start);
+	fire_commands(thr_proper_privates, thr_sneaky_smokers, parser.commands, ts_start);
 
 	for (int i = 0; i < P.size(); i++) {
 		pthread_join(thr_proper_privates[i], NULL);

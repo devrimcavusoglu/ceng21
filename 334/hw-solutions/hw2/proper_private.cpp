@@ -13,6 +13,7 @@ void ProperPrivate::_start_working(
 		const int y = this->zones[i].second;
 
 		this->lock_area(sem, x, y);
+		hw2_notify(hw2_actions::PROPER_PRIVATE_ARRIVED, this->id, x, y);
 		area_cleared = this->collect_zone(grid, sem, x, y);
 		if (!area_cleared) {
 			return this->_start_working(grid, sem);

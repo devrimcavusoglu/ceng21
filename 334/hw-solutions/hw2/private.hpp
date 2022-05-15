@@ -54,7 +54,7 @@ public:
 
 private:
 	// Internal worker method called by `start_working`. 
-	// This method must be overridden in child classes.
+	// This method must be overridden in child class.
 	virtual void _start_working(
 		std::vector<std::vector<int> > &grid, 
 		std::vector<std::unique_ptr<std::binary_semaphore>> &sem

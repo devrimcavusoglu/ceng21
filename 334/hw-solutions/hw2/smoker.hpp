@@ -25,18 +25,32 @@ public:
 	}
 
 private:
+	std::vector<std::pair<int, int>> littering_cells = {
+		std::make_pair(0,0),
+		std::make_pair(0,1),
+		std::make_pair(0,2),
+		std::make_pair(1,2),
+		std::make_pair(2,2),
+		std::make_pair(2,1),
+		std::make_pair(2,0),
+		std::make_pair(1,0)
+	};
+
 	void _start_working(
 		std::vector<std::vector<int> > &grid, 
 		std::vector<std::unique_ptr<std::binary_semaphore>> &sem
-	) override {}
+	) override;
 
 	// Triggers private to collect cell=(x,y) from the grid.
-	bool collect_zone(
+	bool litter_zone(
 		std::vector<std::vector<int> > &grid,
 		std::vector<std::unique_ptr<std::binary_semaphore>> &sem, 
 		int x, 
-		int y
+		int y,
+		int c
 	);
+
+	std::pair<int, int> get_next_cell(int iter, const int x, const int y);
 };
 
 #endif //SMOKER_HPP
