@@ -9,6 +9,8 @@ void ProperPrivate::_start_working(
 	this->n_col = grid[0].size();
 	bool area_cleared;
 	for (int i = 0; i < this->zones.size(); i++) {
+		if (this->stopped)
+			return;
 		const int x = this->zones[i].first;
 		const int y = this->zones[i].second;
 
@@ -36,9 +38,14 @@ bool ProperPrivate::collect_zone(
 	for (int i = x; i < x+this->working_area.first; i++) {
 		for (int j = y; j < y+this->working_area.second; j++) {
 			while (grid[i][j] > 0) {
-				if (!this->is_working())
-					return false;
-				usleep(this->working_time * 1000);
+				for (int i = 0; i < 100; i++) {
+					// Rather than sleeping the whole working time
+					// splitting the working time into small chunks 
+					// like this allows the thread to response (almost) on point.
+					if (!this->is_working())
+						return false; 
+					usleep(this->working_time * 10);
+				}
 				grid[i][j]--;
 				hw2_notify(hw2_actions::PROPER_PRIVATE_GATHERED, this->id, i, j);
 			}

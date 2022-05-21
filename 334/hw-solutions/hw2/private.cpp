@@ -20,11 +20,14 @@ void Private::lock_area(
 ) {
 	if (this->is_working())
 		return;
+	else
+		this->waiting_to_lock = true;
 	for (int i = x; i < (x+this->working_area.first); i++) {
 		for (int j = y; j < (y+this->working_area.second); j++) {
 			sem.at(i*this->n_col + j)->acquire();
 		} 
 	}
+	this->waiting_to_lock = false;
 	this->current_zone = std::make_pair(x, y);
 }
 
@@ -47,4 +50,9 @@ bool Private::is_working() {
 	if (this->current_zone.first == -1 and this->current_zone.second == -1)
 		return false;
 	return true;
+}
+
+
+bool Private::is_waiting() {
+	return this->waiting_to_lock;
 }

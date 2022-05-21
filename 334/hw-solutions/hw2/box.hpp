@@ -11,7 +11,6 @@ public:
 	// checks whether there is intersection
 	bool intersects(Box &other) const {
 		int smallest_x, smallest_y;
-		if other
 	}
 
 private:

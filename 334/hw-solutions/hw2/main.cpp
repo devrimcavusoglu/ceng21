@@ -19,6 +19,7 @@ std::vector<std::unique_ptr<std::binary_semaphore>> S;
 
 // Commands signals part-2
 std::atomic<bool> should_continue{true};
+std::atomic<bool> wait_for_all{true};
 
 
 template <class T>
@@ -56,33 +57,39 @@ int time_elapsed(int64_t ts_start) {
 void fire_commands(pthread_t *thr_proper_privates, pthread_t *thr_sneaky_smokers, std::vector<Command> &commands, int64_t ts_start) {
 	for (int i = 0; i < commands.size(); i++) {
 		while (time_elapsed(ts_start) <= commands[i].notify_time);
-		hw2_notify(commands[i].action, 0, 0, 0);
-		if (commands[i].action == hw2_actions::ORDER_BREAK) {
-			if (should_continue.load()) {
-				should_continue.store(false);
-				for (int t = 0; t < P.size(); t++)
-					pthread_kill(thr_proper_privates[t], SIGUSR1);
-			}
-		}
-		else if (commands[i].action == hw2_actions::ORDER_STOP) {
-			for (int t = 0; t < P.size(); t++) {
-				P[t].unlock_area(S);
-				hw2_notify(hw2_actions::PROPER_PRIVATE_STOPPED, P[t].id, 0, 0);
-				should_continue.store(true);
-				should_continue.notify_all();
-				pthread_cancel(thr_proper_privates[t]);
-			}
-			for (int t = 0; t < SS.size(); t++) {
-				P[t].unlock_area(S);
-				hw2_notify(hw2_actions::SNEAKY_SMOKER_STOPPED, P[t].id, 0, 0);
-				pthread_cancel(thr_sneaky_smokers[t]);
-			}
-		}
-		else {
-			if (!should_continue.load()) {
-				should_continue.store(true);
-				should_continue.notify_all();
-			}
+		switch (commands[i].action) {
+			case hw2_actions::ORDER_BREAK:
+				if (should_continue.load()) {
+					wait_for_all.store(true);
+					should_continue.store(false);
+					for (int t = 0; t < P.size(); t++)
+						pthread_kill(thr_proper_privates[t], SIGUSR1);
+					hw2_notify(commands[i].action, 0, 0, 0);
+					wait_for_all.store(false);
+				}
+				break;
+
+			case hw2_actions::ORDER_STOP:
+				hw2_notify(commands[i].action, 0, 0, 0);
+				for (int t = 0; t < P.size(); t++) {
+					P[t].unlock_area(S);
+					P[t].stopped = true;
+					pthread_cancel(thr_proper_privates[t]);
+					hw2_notify(hw2_actions::PROPER_PRIVATE_STOPPED, P[t].id, 0, 0);
+				}
+				for (int t = 0; t < SS.size(); t++) {
+					SS[t].unlock_area(S);
+					pthread_cancel(thr_sneaky_smokers[t]);
+					hw2_notify(hw2_actions::SNEAKY_SMOKER_STOPPED, SS[t].id, 0, 0);
+				}
+				break;
+			default:
+				if (!should_continue.load()) {
+					should_continue.store(true);
+					hw2_notify(commands[i].action, 0, 0, 0);
+					should_continue.notify_all();
+				}
+				break;
 		}
 	}
 }
@@ -110,16 +117,24 @@ void *start_collecting(void* arguments) {
 
 
 static void signalHandler(int signum) {
+	wait_for_all.wait(true);
+	// printf("I'm in signal handler (%lu)\n", pthread_self());
 	ProperPrivate *p = private_by_tid<ProperPrivate>(P, pthread_self());
-	if (!p) // error or smoker
+	if (!p) { // error or smoker
+		// printf("I'm NULL by handler (%lu)\n", pthread_self());
 		return;
+	}
+	// printf("I'm continuing (%lu)\n", pthread_self());
 	if (signum == SIGUSR1) {
-		if (p->is_working())
+		usleep(10);
+		if (p->is_working() or p->is_waiting()) {
+			p->unlock_area(S);
 			hw2_notify(hw2_actions::PROPER_PRIVATE_TOOK_BREAK, p->id, 0, 0);
-		p->unlock_area(S);
+		}
 		should_continue.wait(false);
-		if (!p->is_working())
+		if (!p->is_working()) {
 			hw2_notify(hw2_actions::PROPER_PRIVATE_CONTINUED, p->id, 0, 0);
+		}
 	}
 }
 
@@ -137,7 +152,14 @@ int main() {
 	print_arr(parser.sneaky_smokers);
 	std::cout << "Commands: " << parser.commands.size() << std::endl;
 	for (int i = 0; i < parser.commands.size(); i++) {
-		std::cout << "Command #" << parser.commands[i].action << " at msec " << parser.commands[i].notify_time << std::endl;
+		std::string cmd_str;
+		if (parser.commands[i].action == hw2_actions::ORDER_STOP)
+			cmd_str = "STOP";
+		else if (parser.commands[i].action == hw2_actions::ORDER_BREAK)
+			cmd_str = "BREAK";
+		else
+			cmd_str = "CONTINUE";
+		std::cout << "Command '" << cmd_str << "' at msec " << parser.commands[i].notify_time << std::endl;
 	}
 	std::cout << "=============OUT===========\n";
 
@@ -153,7 +175,6 @@ int main() {
 
 	// see https://stackoverflow.com/a/62857783
 	struct sigaction sa;
-	// sigset_t set;
 	sigemptyset(&sa.sa_mask);
 	sigaddset(&sa.sa_mask, SIGUSR1);
 	sa.sa_handler = signalHandler;
@@ -175,7 +196,7 @@ int main() {
 		pp_args[i].pvt = &P[i];
 		rc = pthread_create(&thr_proper_privates[i], NULL, &start_collecting, &pp_args[i]);
 		if (rc) {
-		 std::cerr << "Error:unable to create thread," << rc << std::endl;
+		 std::cout << "Error:unable to create thread," << rc << std::endl;
 		 exit(-1);
 		}
 	}
@@ -194,10 +215,9 @@ int main() {
 	for (int i = 0; i < P.size(); i++) {
 		pthread_join(thr_proper_privates[i], NULL);
 	}
-	for (int i = 0; i < P.size(); i++) {
+	for (int i = 0; i < SS.size(); i++) {
 		pthread_join(thr_sneaky_smokers[i], NULL);
 	}
-
 
 	std::cout << "=================\n";
 	print_2darr(G);
