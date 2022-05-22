@@ -21,6 +21,9 @@ std::vector<std::unique_ptr<std::binary_semaphore>> S;
 std::atomic<bool> should_continue{true};
 std::atomic<bool> wait_for_all{true};
 
+// mutexes
+pthread_mutex_t commander_mutex;
+
 
 template <class T>
 void print_2darr(std::vector<std::vector<T> > &arr) {
@@ -62,29 +65,33 @@ void fire_commands(pthread_t *thr_proper_privates, pthread_t *thr_sneaky_smokers
 				if (should_continue.load()) {
 					wait_for_all.store(true);
 					should_continue.store(false);
-					for (int t = 0; t < P.size(); t++)
+					for (int t = 0; t < P.size(); t++) {
+						P[t].set_stopped(true, &S);
 						pthread_kill(thr_proper_privates[t], SIGUSR1);
+					}
 					hw2_notify(commands[i].action, 0, 0, 0);
 					wait_for_all.store(false);
 				}
 				break;
 			case hw2_actions::ORDER_STOP:
-				should_continue.store(true);
 				hw2_notify(commands[i].action, 0, 0, 0);
 				for (int t = 0; t < P.size(); t++) {
-					P[t].stop(S);
+					P[t].set_stopped(true, &S);
 					pthread_cancel(thr_proper_privates[t]);
 				}
 				for (int t = 0; t < SS.size(); t++) {
-					SS[t].stop(S);
-					SS[t].notify_stopped();
+					SS[t].set_stopped(true, &S);
 					pthread_cancel(thr_sneaky_smokers[t]);
 				}
 				for (int t = 0; t < P.size(); t++)
 					P[t].notify_stopped();
+				for (int t = 0; t < SS.size(); t++)
+					SS[t].notify_stopped();
 				break;
 			default:
 				hw2_notify(commands[i].action, 0, 0, 0);
+				for (int t = 0; t < P.size(); t++) 
+						P[t].set_stopped(false, NULL);
 				if (!should_continue.load()) {
 					should_continue.store(true);
 					should_continue.notify_all();
@@ -110,7 +117,6 @@ void *start_collecting(void* arguments) {
 	thread_args_t<ProperPrivate> *args = (thread_args_t<ProperPrivate>*)arguments;
 	ProperPrivate *properpvt = args->pvt;
 	// Notify ready
-	// hw2_notify(hw2_actions::PROPER_PRIVATE_CREATED, properpvt->id, 0, 0);
 	properpvt->notify_created();
 	properpvt->start_working(G, S);
     return NULL;
@@ -128,12 +134,12 @@ static void signalHandler(int signum) {
 	}
 	// printf("I'm continuing (%lu)\n", pthread_self());
 	if (signum == SIGUSR1) {
-		if (p->is_working() or p->is_waiting()) {
+		if (p->is_stopped()) {
 			p->unlock_area(S);
 			p->notify_take_break();
 		}
 		should_continue.wait(false);
-		if (!p->is_working()) {
+		if (!p->is_stopped()) {
 			p->notify_continue();
 		}
 	}

@@ -50,13 +50,15 @@ public:
 		std::vector<std::unique_ptr<std::binary_semaphore>> &sem 
 	);
 
+	void set_mutex();
+
 	bool is_working();
 
 	bool is_waiting();
 
 	bool is_stopped();
 
-	bool stop(std::vector<std::unique_ptr<std::binary_semaphore>> &sem);
+	void set_stopped(bool value, std::vector<std::unique_ptr<std::binary_semaphore>> *sem);
 
 	virtual void notify_created() {}
 
@@ -73,6 +75,8 @@ public:
 private:
 	bool waiting_to_lock = false;
 	bool stopped = false;
+
+	pthread_mutex_t command_mutex;
 
 	// Internal worker method called by `start_working`. 
 	// This method must be overridden in child class.

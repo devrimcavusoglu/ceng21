@@ -63,10 +63,13 @@ bool Private::is_stopped() {
 }
 
 
-bool Private::stop(std::vector<std::unique_ptr<std::binary_semaphore>> &sem) {
-	if (this->stopped)
-		return false;
-	this->unlock_area(sem);
-	this->stopped = true;
-	return true;
+void Private::set_stopped(bool value, std::vector<std::unique_ptr<std::binary_semaphore>> *sem) {
+	if (value) {
+		this->unlock_area(*sem);
+		this->stopped = true;		
+	}
+	else
+		this->stopped = false;
 }
+
+
