@@ -68,25 +68,25 @@ void fire_commands(pthread_t *thr_proper_privates, pthread_t *thr_sneaky_smokers
 					wait_for_all.store(false);
 				}
 				break;
-
 			case hw2_actions::ORDER_STOP:
+				should_continue.store(true);
+				should_continue.notify_all();
 				hw2_notify(commands[i].action, 0, 0, 0);
 				for (int t = 0; t < P.size(); t++) {
-					P[t].unlock_area(S);
-					P[t].stopped = true;
-					pthread_cancel(thr_proper_privates[t]);
+					P[t].stop(S);
 					hw2_notify(hw2_actions::PROPER_PRIVATE_STOPPED, P[t].id, 0, 0);
+					// pthread_cancel(thr_proper_privates[t]);
 				}
 				for (int t = 0; t < SS.size(); t++) {
-					SS[t].unlock_area(S);
-					pthread_cancel(thr_sneaky_smokers[t]);
+					SS[t].stop(S);
 					hw2_notify(hw2_actions::SNEAKY_SMOKER_STOPPED, SS[t].id, 0, 0);
+					// pthread_cancel(thr_sneaky_smokers[t]);
 				}
 				break;
 			default:
+				hw2_notify(commands[i].action, 0, 0, 0);
 				if (!should_continue.load()) {
 					should_continue.store(true);
-					hw2_notify(commands[i].action, 0, 0, 0);
 					should_continue.notify_all();
 				}
 				break;
@@ -126,7 +126,6 @@ static void signalHandler(int signum) {
 	}
 	// printf("I'm continuing (%lu)\n", pthread_self());
 	if (signum == SIGUSR1) {
-		usleep(10);
 		if (p->is_working() or p->is_waiting()) {
 			p->unlock_area(S);
 			hw2_notify(hw2_actions::PROPER_PRIVATE_TOOK_BREAK, p->id, 0, 0);

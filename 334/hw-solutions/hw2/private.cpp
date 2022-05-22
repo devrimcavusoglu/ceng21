@@ -56,3 +56,17 @@ bool Private::is_working() {
 bool Private::is_waiting() {
 	return this->waiting_to_lock;
 }
+
+
+bool Private::is_stopped() {
+	return this->stopped;
+}
+
+
+bool Private::stop(std::vector<std::unique_ptr<std::binary_semaphore>> &sem) {
+	if (this->stopped)
+		return false;
+	this->unlock_area(sem);
+	this->stopped = true;
+	return true;
+}

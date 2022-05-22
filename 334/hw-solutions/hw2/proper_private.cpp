@@ -9,7 +9,7 @@ void ProperPrivate::_start_working(
 	this->n_col = grid[0].size();
 	bool area_cleared;
 	for (int i = 0; i < this->zones.size(); i++) {
-		if (this->stopped)
+		if (this->is_stopped())
 			return;
 		const int x = this->zones[i].first;
 		const int y = this->zones[i].second;

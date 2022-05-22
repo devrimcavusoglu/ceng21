@@ -18,8 +18,6 @@ public:
 	int n_col;
 	unsigned int working_time;
 	unsigned long tid = 0;
-	bool waiting_to_lock = false;
-	bool stopped = false;
 	std::vector<std::pair<int, int>> zones;
 	std::pair<int, int> working_area;
 	std::pair<int, int> current_zone = std::make_pair(-1, -1);
@@ -56,7 +54,14 @@ public:
 
 	bool is_waiting();
 
+	bool is_stopped();
+
+	bool stop(std::vector<std::unique_ptr<std::binary_semaphore>> &sem);
+
 private:
+	bool waiting_to_lock = false;
+	bool stopped = false;
+
 	// Internal worker method called by `start_working`. 
 	// This method must be overridden in child class.
 	virtual void _start_working(
