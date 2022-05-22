@@ -58,6 +58,18 @@ public:
 
 	bool stop(std::vector<std::unique_ptr<std::binary_semaphore>> &sem);
 
+	virtual void notify_created() {}
+
+	virtual void notify_arrived(const int x, const int y) {}
+
+	virtual void notify_action(const int x, const int y) {}
+
+	virtual void notify_action_complete() {}
+
+	virtual void notify_exited() {}
+
+	virtual void notify_stopped() {}
+
 private:
 	bool waiting_to_lock = false;
 	bool stopped = false;

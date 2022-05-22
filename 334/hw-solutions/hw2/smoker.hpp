@@ -14,6 +14,30 @@ public:
 	// Add left corner cell of duty zone for private.
 	void addZone(int x, int y, int c);
 
+	virtual void notify_created() override {
+		hw2_notify(hw2_actions::SNEAKY_SMOKER_CREATED, this->id, 0, 0);
+	}
+
+	virtual void notify_arrived(const int x, const int y) override {
+		hw2_notify(hw2_actions::SNEAKY_SMOKER_ARRIVED, this->id, x, y);
+	}
+
+	virtual void notify_action(const int x, const int y) override {
+		hw2_notify(hw2_actions::SNEAKY_SMOKER_FLICKED, this->id, x, y);
+	}
+
+	virtual void notify_action_complete() override {
+		hw2_notify(hw2_actions::SNEAKY_SMOKER_LEFT, this->id, 0, 0);
+	}
+
+	virtual void notify_exited() override {
+		hw2_notify(hw2_actions::SNEAKY_SMOKER_EXITED, this->id, 0, 0);
+	}
+
+	virtual void notify_stopped() override {
+		hw2_notify(hw2_actions::SNEAKY_SMOKER_STOPPED, this->id, 0, 0);
+	}
+
 	friend std::ostream& operator<<(std::ostream& os, const SneakySmoker& pvt) {
 		os << "  SneakySmoker #" << pvt.id  << " | working_area: " << pvt.working_area.first << "x" << pvt.working_area.second << 
 			" | working_time: " << pvt.working_time << std::endl;

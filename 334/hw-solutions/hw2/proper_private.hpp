@@ -9,6 +9,39 @@ public:
 
 	ProperPrivate(int id, int x, int y, int t) : Private(id, x, y, t) {};
 
+
+	virtual void notify_created() override {
+		hw2_notify(hw2_actions::PROPER_PRIVATE_CREATED, this->id, 0, 0);
+	}
+
+	virtual void notify_arrived(const int x, const int y) override {
+		hw2_notify(hw2_actions::PROPER_PRIVATE_ARRIVED, this->id, x, y);
+	}
+
+	virtual void notify_action(const int x, const int y) override {
+		hw2_notify(hw2_actions::PROPER_PRIVATE_GATHERED, this->id, x, y);
+	}
+
+	virtual void notify_action_complete() override {
+		hw2_notify(hw2_actions::PROPER_PRIVATE_CLEARED, this->id, 0, 0);
+	}
+
+	virtual void notify_exited() override {
+		hw2_notify(hw2_actions::PROPER_PRIVATE_EXITED, this->id, 0, 0);
+	}
+
+	virtual void notify_stopped() override {
+		hw2_notify(hw2_actions::PROPER_PRIVATE_STOPPED, this->id, 0, 0);
+	}
+
+	void notify_take_break() {
+		hw2_notify(hw2_actions::PROPER_PRIVATE_TOOK_BREAK, this->id, 0, 0);
+	}
+
+	void notify_continue() {
+		hw2_notify(hw2_actions::PROPER_PRIVATE_CONTINUED, this->id, 0, 0);
+	}
+
 	friend std::ostream& operator<<(std::ostream& os, const ProperPrivate& pvt) {
 		os << "  ProperPrivate #" << pvt.id  << " | working_area: " << pvt.working_area.first << "x" << pvt.working_area.second << 
 			" | working_time: " << pvt.working_time << std::endl;

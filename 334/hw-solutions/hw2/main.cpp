@@ -70,18 +70,18 @@ void fire_commands(pthread_t *thr_proper_privates, pthread_t *thr_sneaky_smokers
 				break;
 			case hw2_actions::ORDER_STOP:
 				should_continue.store(true);
-				should_continue.notify_all();
 				hw2_notify(commands[i].action, 0, 0, 0);
 				for (int t = 0; t < P.size(); t++) {
 					P[t].stop(S);
-					hw2_notify(hw2_actions::PROPER_PRIVATE_STOPPED, P[t].id, 0, 0);
-					// pthread_cancel(thr_proper_privates[t]);
+					pthread_cancel(thr_proper_privates[t]);
 				}
 				for (int t = 0; t < SS.size(); t++) {
 					SS[t].stop(S);
-					hw2_notify(hw2_actions::SNEAKY_SMOKER_STOPPED, SS[t].id, 0, 0);
-					// pthread_cancel(thr_sneaky_smokers[t]);
+					SS[t].notify_stopped();
+					pthread_cancel(thr_sneaky_smokers[t]);
 				}
+				for (int t = 0; t < P.size(); t++)
+					P[t].notify_stopped();
 				break;
 			default:
 				hw2_notify(commands[i].action, 0, 0, 0);
@@ -99,7 +99,7 @@ void *start_smoking(void* arguments) {
 	thread_args_t<SneakySmoker> *args = (thread_args_t<SneakySmoker>*)arguments;
 	SneakySmoker *smoker = args->pvt;
 	// Notify ready
-	hw2_notify(hw2_actions::SNEAKY_SMOKER_CREATED, smoker->id, 0, 0);
+	smoker->notify_created();
 	smoker->start_working(G, S);
     return NULL;
 }
@@ -110,7 +110,8 @@ void *start_collecting(void* arguments) {
 	thread_args_t<ProperPrivate> *args = (thread_args_t<ProperPrivate>*)arguments;
 	ProperPrivate *properpvt = args->pvt;
 	// Notify ready
-	hw2_notify(hw2_actions::PROPER_PRIVATE_CREATED, properpvt->id, 0, 0);
+	// hw2_notify(hw2_actions::PROPER_PRIVATE_CREATED, properpvt->id, 0, 0);
+	properpvt->notify_created();
 	properpvt->start_working(G, S);
     return NULL;
 }
@@ -119,7 +120,8 @@ void *start_collecting(void* arguments) {
 static void signalHandler(int signum) {
 	wait_for_all.wait(true);
 	// printf("I'm in signal handler (%lu)\n", pthread_self());
-	ProperPrivate *p = private_by_tid<ProperPrivate>(P, pthread_self());
+	long unsigned tid = pthread_self();
+	ProperPrivate *p = private_by_tid<ProperPrivate>(P, tid);
 	if (!p) { // error or smoker
 		// printf("I'm NULL by handler (%lu)\n", pthread_self());
 		return;
@@ -128,11 +130,11 @@ static void signalHandler(int signum) {
 	if (signum == SIGUSR1) {
 		if (p->is_working() or p->is_waiting()) {
 			p->unlock_area(S);
-			hw2_notify(hw2_actions::PROPER_PRIVATE_TOOK_BREAK, p->id, 0, 0);
+			p->notify_take_break();
 		}
 		should_continue.wait(false);
 		if (!p->is_working()) {
-			hw2_notify(hw2_actions::PROPER_PRIVATE_CONTINUED, p->id, 0, 0);
+			p->notify_continue();
 		}
 	}
 }

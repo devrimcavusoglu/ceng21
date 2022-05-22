@@ -15,17 +15,17 @@ void ProperPrivate::_start_working(
 		const int y = this->zones[i].second;
 
 		this->lock_area(sem, x, y);
-		hw2_notify(hw2_actions::PROPER_PRIVATE_ARRIVED, this->id, x, y);
+		this->notify_arrived(x, y);
 		area_cleared = this->collect_zone(grid, sem, x, y);
 		if (!area_cleared) {
 			return this->_start_working(grid, sem);
 		}
 		this->unlock_area(sem);
-		hw2_notify(hw2_actions::PROPER_PRIVATE_CLEARED, this->id, 0, 0);
+		this->notify_action_complete();
 	}
 
 	// Notify exit
-	hw2_notify(hw2_actions::PROPER_PRIVATE_EXITED, this->id, 0, 0);
+	this->notify_exited();
 }
 
 // Triggers private to collect cell=(x,y) from the grid.
@@ -38,7 +38,7 @@ bool ProperPrivate::collect_zone(
 	for (int i = x; i < x+this->working_area.first; i++) {
 		for (int j = y; j < y+this->working_area.second; j++) {
 			while (grid[i][j] > 0) {
-				for (int i = 0; i < 100; i++) {
+				for (int k = 0; k < 100; k++) {
 					// Rather than sleeping the whole working time
 					// splitting the working time into small chunks 
 					// like this allows the thread to response (almost) on point.
@@ -47,7 +47,7 @@ bool ProperPrivate::collect_zone(
 					usleep(this->working_time * 10);
 				}
 				grid[i][j]--;
-				hw2_notify(hw2_actions::PROPER_PRIVATE_GATHERED, this->id, i, j);
+				this->notify_action(i, j);
 			}
 		}
 	}

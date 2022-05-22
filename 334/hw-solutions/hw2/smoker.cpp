@@ -21,17 +21,17 @@ void SneakySmoker::_start_working(
 		const int c = this->cig_counts[i];
 
 		this->lock_area(sem, x, y);
-		hw2_notify(hw2_actions::SNEAKY_SMOKER_ARRIVED, this->id, x+1, y+1);
+		this->notify_arrived(x+1, y+1);
 		area_cleared = this->litter_zone(grid, sem, x, y, c);
 		if (!area_cleared) {
 			return this->_start_working(grid, sem);
 		}
 		this->unlock_area(sem);
-		hw2_notify(hw2_actions::SNEAKY_SMOKER_LEFT, this->id, 0, 0);
+		this->notify_action_complete();
 	}
 
 	// Notify exit
-	hw2_notify(hw2_actions::SNEAKY_SMOKER_EXITED, this->id, 0, 0);
+	this->notify_exited();
 }
 
 
@@ -53,7 +53,7 @@ bool SneakySmoker::litter_zone(
 		usleep(this->working_time * 1000);
 		grid[cell.first][cell.second]++;
 		c--;
-		hw2_notify(hw2_actions::SNEAKY_SMOKER_FLICKED, this->id, cell.first, cell.second);
+		this->notify_action(cell.first, cell.second);
 	}
 	return true;
 }
