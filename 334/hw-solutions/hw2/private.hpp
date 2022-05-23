@@ -1,6 +1,7 @@
 #ifndef PRIVATE_HPP
 #define PRIVATE_HPP
 
+#include <atomic>
 #include <iostream>
 #include <memory>
 #include <ostream>
@@ -58,7 +59,7 @@ public:
 
 	bool is_stopped();
 
-	void set_stopped(bool value, std::vector<std::unique_ptr<std::binary_semaphore>> *sem);
+	void stop(std::vector<std::unique_ptr<std::binary_semaphore>> &sem);
 
 	virtual void notify_created() {}
 

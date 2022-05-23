@@ -1,4 +1,3 @@
-#include <atomic>
 #include <chrono>
 #include <signal.h>
 #include <fcntl.h>
@@ -22,7 +21,7 @@ std::atomic<bool> should_continue{true};
 std::atomic<bool> wait_for_all{true};
 
 // mutexes
-pthread_mutex_t commander_mutex;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 template <class T>
@@ -65,33 +64,40 @@ void fire_commands(pthread_t *thr_proper_privates, pthread_t *thr_sneaky_smokers
 				if (should_continue.load()) {
 					wait_for_all.store(true);
 					should_continue.store(false);
+					pthread_mutex_lock(&mutex);
+					hw2_notify(commands[i].action, 0, 0, 0);
 					for (int t = 0; t < P.size(); t++) {
-						P[t].set_stopped(true, &S);
+						P[t].take_break(S);
 						pthread_kill(thr_proper_privates[t], SIGUSR1);
 					}
-					hw2_notify(commands[i].action, 0, 0, 0);
+					pthread_mutex_unlock(&mutex);
 					wait_for_all.store(false);
 				}
 				break;
 			case hw2_actions::ORDER_STOP:
+				pthread_mutex_lock(&mutex);
 				hw2_notify(commands[i].action, 0, 0, 0);
 				for (int t = 0; t < P.size(); t++) {
-					P[t].set_stopped(true, &S);
+					P[t].stop(S);
 					pthread_cancel(thr_proper_privates[t]);
 				}
 				for (int t = 0; t < SS.size(); t++) {
-					SS[t].set_stopped(true, &S);
+					SS[t].stop(S);
 					pthread_cancel(thr_sneaky_smokers[t]);
 				}
+				pthread_mutex_unlock(&mutex);
 				for (int t = 0; t < P.size(); t++)
 					P[t].notify_stopped();
 				for (int t = 0; t < SS.size(); t++)
 					SS[t].notify_stopped();
+				
 				break;
 			default:
+				pthread_mutex_lock(&mutex);
 				hw2_notify(commands[i].action, 0, 0, 0);
 				for (int t = 0; t < P.size(); t++) 
-						P[t].set_stopped(false, NULL);
+					P[t].continue_work(G, S);
+				pthread_mutex_unlock(&mutex);
 				if (!should_continue.load()) {
 					should_continue.store(true);
 					should_continue.notify_all();
@@ -99,6 +105,33 @@ void fire_commands(pthread_t *thr_proper_privates, pthread_t *thr_sneaky_smokers
 				break;
 		}
 	}
+}
+
+
+static void signal_handler(int signum) {
+	wait_for_all.wait(true);
+	// printf("I'm in signal handler (%lu)\n", pthread_self());
+	long unsigned tid = pthread_self();
+	ProperPrivate *p = private_by_tid<ProperPrivate>(P, tid);
+	if (!p) { // error or smoker
+		// printf("I'm NULL by handler (%lu)\n", pthread_self());
+		return;
+	}
+	// printf("I'm continuing (%lu)\n", pthread_self());
+	if (signum == SIGUSR1) {
+		p->take_break(S);
+		should_continue.wait(false);
+		p->continue_work(G, S);
+	}
+}
+
+
+void install_handler() {
+	// see https://stackoverflow.com/a/62857783
+    struct sigaction sa;
+    sa.sa_handler = signal_handler;
+    sigfillset(&sa.sa_mask);
+    sigaction(SIGUSR1, &sa, NULL);
 }
 
 
@@ -112,37 +145,15 @@ void *start_smoking(void* arguments) {
 }
 
 
-
 void *start_collecting(void* arguments) {
+	install_handler();
+	wait_for_all.wait(true);
 	thread_args_t<ProperPrivate> *args = (thread_args_t<ProperPrivate>*)arguments;
 	ProperPrivate *properpvt = args->pvt;
 	// Notify ready
 	properpvt->notify_created();
 	properpvt->start_working(G, S);
     return NULL;
-}
-
-
-static void signalHandler(int signum) {
-	wait_for_all.wait(true);
-	// printf("I'm in signal handler (%lu)\n", pthread_self());
-	long unsigned tid = pthread_self();
-	ProperPrivate *p = private_by_tid<ProperPrivate>(P, tid);
-	if (!p) { // error or smoker
-		// printf("I'm NULL by handler (%lu)\n", pthread_self());
-		return;
-	}
-	// printf("I'm continuing (%lu)\n", pthread_self());
-	if (signum == SIGUSR1) {
-		if (p->is_stopped()) {
-			p->unlock_area(S);
-			p->notify_take_break();
-		}
-		should_continue.wait(false);
-		if (!p->is_stopped()) {
-			p->notify_continue();
-		}
-	}
 }
 
 
@@ -179,14 +190,6 @@ int main() {
 	P = parser.privates;
 	SS = parser.sneaky_smokers;
 
-
-	// see https://stackoverflow.com/a/62857783
-	struct sigaction sa;
-	sigemptyset(&sa.sa_mask);
-	sigaddset(&sa.sa_mask, SIGUSR1);
-	sa.sa_handler = signalHandler;
-	sigaction(SIGUSR1, &sa, NULL);
-
 	// initialize notifier & get start_time
 	hw2_init_notifier();
 	int64_t ts_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -199,6 +202,7 @@ int main() {
 	thread_args_t<SneakySmoker> ss_args[SS.size()];
 	int rc;
 
+	wait_for_all.store(true);
 	for(int i = 0; i < P.size(); i++ ) {
 		pp_args[i].pvt = &P[i];
 		rc = pthread_create(&thr_proper_privates[i], NULL, &start_collecting, &pp_args[i]);
@@ -207,6 +211,9 @@ int main() {
 		 exit(-1);
 		}
 	}
+
+	wait_for_all.store(false);
+	wait_for_all.notify_all();
 
 	for(int i = 0; i < SS.size(); i++ ) {
 		ss_args[i].pvt = &SS[i];
@@ -217,6 +224,7 @@ int main() {
 		}
 	}
 
+	
 	fire_commands(thr_proper_privates, thr_sneaky_smokers, parser.commands, ts_start);
 
 	for (int i = 0; i < P.size(); i++) {

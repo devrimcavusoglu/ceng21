@@ -1,6 +1,7 @@
 #ifndef PROPER_PRIVATE_HPP
 #define PROPER_PRIVATE_HPP
 
+
 #include "private.hpp"
 
 
@@ -9,6 +10,16 @@ public:
 
 	ProperPrivate(int id, int x, int y, int t) : Private(id, x, y, t) {};
 
+	void take_break(std::vector<std::unique_ptr<std::binary_semaphore>> &sem);
+
+	void continue_work(
+		std::vector<std::vector<int> > &grid, 
+		std::vector<std::unique_ptr<std::binary_semaphore>> &sem
+	);
+
+	bool is_on_break() {
+		return this->on_break;
+	}
 
 	virtual void notify_created() override {
 		hw2_notify(hw2_actions::PROPER_PRIVATE_CREATED, this->id, 0, 0);
@@ -52,6 +63,8 @@ public:
 	}
 
 private:
+	bool on_break = false;
+	pthread_mutex_t should_work = PTHREAD_MUTEX_INITIALIZER;
 
 	void _start_working(
 		std::vector<std::vector<int> > &grid, 

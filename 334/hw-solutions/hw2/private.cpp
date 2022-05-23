@@ -63,13 +63,11 @@ bool Private::is_stopped() {
 }
 
 
-void Private::set_stopped(bool value, std::vector<std::unique_ptr<std::binary_semaphore>> *sem) {
-	if (value) {
-		this->unlock_area(*sem);
-		this->stopped = true;		
-	}
-	else
-		this->stopped = false;
+void Private::stop(std::vector<std::unique_ptr<std::binary_semaphore>> &sem) {
+	this->stopped = true;
+	this->unlock_area(sem);
+	this->notify_stopped();
+	pthread_exit(NULL);
 }
 
 
