@@ -46,11 +46,13 @@ bool SneakySmoker::litter_zone(
 
 	int iter = 0;
 	while (c > 0) {
-		if (!this->is_working())
-			return false;
 		cell = this->get_next_cell(iter, x, y);
 		iter++;
-		usleep(this->working_time * 1000);
+		for (int t = 0; t < 500; t++) {
+			if (!this->is_working())
+				return false;
+			usleep(this->working_time * 2);
+		}
 		grid[cell.first][cell.second]++;
 		c--;
 		this->notify_action(cell.first, cell.second);

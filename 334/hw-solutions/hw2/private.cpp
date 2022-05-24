@@ -18,10 +18,11 @@ void Private::lock_area(
 	const int x, 
 	const int y
 ) {
-	if (this->is_working())
+	if (this->is_working() or this->is_stopped())
 		return;
 	else
 		this->waiting_to_lock = true;
+	pthread_mutex_lock(&this->mutex);
 	for (int i = x; i < (x+this->working_area.first); i++) {
 		for (int j = y; j < (y+this->working_area.second); j++) {
 			sem.at(i*this->n_col + j)->acquire();
@@ -29,6 +30,7 @@ void Private::lock_area(
 	}
 	this->waiting_to_lock = false;
 	this->current_zone = std::make_pair(x, y);
+	pthread_mutex_unlock(&this->mutex);
 }
 
 void Private::unlock_area(
@@ -36,6 +38,7 @@ void Private::unlock_area(
 ) {
 	if (!this->is_working())
 		return;
+	pthread_mutex_lock(&this->mutex);
 	int x = this->current_zone.first;
 	int y = this->current_zone.second;
 	for (int i = x; i < x+this->working_area.first; i++) {
@@ -43,6 +46,7 @@ void Private::unlock_area(
 			sem.at(i*this->n_col + j)->release();
 	}
 	this->current_zone = std::make_pair(-1, -1);
+	pthread_mutex_unlock(&this->mutex);
 }
 
 
