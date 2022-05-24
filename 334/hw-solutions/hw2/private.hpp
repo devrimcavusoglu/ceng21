@@ -77,7 +77,10 @@ private:
 	bool waiting_to_lock = false;
 	bool stopped = false;
 
-	pthread_mutex_t command_mutex;
+	// this mutex is reserved for the thread for any 
+	// potential use for private works. May or may not 
+	// be used.
+	pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 	// Internal worker method called by `start_working`. 
 	// This method must be overridden in child class.

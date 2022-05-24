@@ -67,7 +67,4 @@ void Private::stop(std::vector<std::unique_ptr<std::binary_semaphore>> &sem) {
 	this->stopped = true;
 	this->unlock_area(sem);
 	this->notify_stopped();
-	pthread_exit(NULL);
 }
-
-

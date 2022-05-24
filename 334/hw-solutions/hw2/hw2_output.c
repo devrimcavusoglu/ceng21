@@ -60,7 +60,7 @@ void hw2_notify(enum hw2_actions action, unsigned id, unsigned i, unsigned j)
     case SNEAKY_SMOKER_FLICKED: printf("flicked a cigbutt towards (%u, %u).\n", i, j); break;
     case SNEAKY_SMOKER_LEFT: puts("had enough of the current area and left."); break;
     case SNEAKY_SMOKER_EXITED: puts("finished smoking and exited."); break;
-    case SNEAKY_SMOKER_STOPPED: printf("stopped as ordered."); break;
+    case SNEAKY_SMOKER_STOPPED: puts("stopped as ordered."); break;
     }
 
     pthread_mutex_unlock(&mut);

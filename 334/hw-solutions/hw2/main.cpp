@@ -85,12 +85,7 @@ void fire_commands(pthread_t *thr_proper_privates, pthread_t *thr_sneaky_smokers
 					SS[t].stop(S);
 					pthread_cancel(thr_sneaky_smokers[t]);
 				}
-				pthread_mutex_unlock(&mutex);
-				for (int t = 0; t < P.size(); t++)
-					P[t].notify_stopped();
-				for (int t = 0; t < SS.size(); t++)
-					SS[t].notify_stopped();
-				
+				pthread_mutex_unlock(&mutex);				
 				break;
 			default:
 				pthread_mutex_lock(&mutex);
@@ -224,7 +219,6 @@ int main() {
 		}
 	}
 
-	
 	fire_commands(thr_proper_privates, thr_sneaky_smokers, parser.commands, ts_start);
 
 	for (int i = 0; i < P.size(); i++) {

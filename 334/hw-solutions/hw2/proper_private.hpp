@@ -64,7 +64,6 @@ public:
 
 private:
 	bool on_break = false;
-	pthread_mutex_t should_work = PTHREAD_MUTEX_INITIALIZER;
 
 	void _start_working(
 		std::vector<std::vector<int> > &grid, 
