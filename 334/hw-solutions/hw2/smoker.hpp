@@ -62,7 +62,8 @@ private:
 
 	void _start_working(
 		std::vector<std::vector<int> > &grid, 
-		std::vector<std::unique_ptr<std::binary_semaphore>> &sem
+		std::vector<std::unique_ptr<std::binary_semaphore>> &sem,
+		int zone_id
 	) override;
 
 	// Triggers private to collect cell=(x,y) from the grid.

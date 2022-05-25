@@ -187,7 +187,7 @@ int main() {
 	// Multi-threading
 	// https://stackoverflow.com/a/15717075
 	pthread_t thr_proper_privates[P.size()];
-	pthread_t thr_sneaky_smokers[P.size()];
+	pthread_t thr_sneaky_smokers[SS.size()];
 	thread_args_t<ProperPrivate> pp_args[P.size()];
 	thread_args_t<SneakySmoker> ss_args[SS.size()];
 	int rc;

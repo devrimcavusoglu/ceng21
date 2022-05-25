@@ -29,7 +29,14 @@ public:
 		std::vector<std::vector<int> > &grid, 
 		std::vector<std::unique_ptr<std::binary_semaphore>> &sem
 	) {
-		this->_start_working(grid, sem);
+		this->tid = pthread_self();
+		this->n_col = grid[0].size();
+		for (int i = 0; i < this->zones.size(); i++) {
+			this->_start_working(grid, sem, i);
+			if (this->is_stopped())
+				return;
+		}
+		this->notify_exited();
 	}
 
 	// Add left corner cell of duty zone for private.
@@ -61,6 +68,14 @@ public:
 
 	void stop(std::vector<std::unique_ptr<std::binary_semaphore>> &sem);
 
+	void lock_mutex() {
+		pthread_mutex_lock(&this->mutex);
+	}
+
+	void unlock_mutex() {
+		pthread_mutex_unlock(&this->mutex);
+	}
+
 	virtual void notify_created() {}
 
 	virtual void notify_arrived(const int x, const int y) {}
@@ -86,7 +101,8 @@ private:
 	// This method must be overridden in child class.
 	virtual void _start_working(
 		std::vector<std::vector<int> > &grid, 
-		std::vector<std::unique_ptr<std::binary_semaphore>> &sem
+		std::vector<std::unique_ptr<std::binary_semaphore>> &sem,
+		int zone_id
 	) {}
 };
 

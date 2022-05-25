@@ -9,29 +9,25 @@ void SneakySmoker::addZone(int x, int y, int c) {
 
 void SneakySmoker::_start_working(
 	std::vector<std::vector<int> > &grid, 
-	std::vector<std::unique_ptr<std::binary_semaphore>> &sem
+	std::vector<std::unique_ptr<std::binary_semaphore>> &sem,
+	int zone_id
 ) {
-	this->tid = pthread_self();
-	this->n_col = grid[0].size();
 	bool area_cleared;
-	for (int i = 0; i < this->zones.size(); i++) {
-		// get top-left (x,y)
-		const int x = this->zones[i].first - 1;
-		const int y = this->zones[i].second - 1;
-		const int c = this->cig_counts[i];
+	// get top-left (x,y)
+	const int x = this->zones[zone_id].first - 1;
+	const int y = this->zones[zone_id].second - 1;
+	const int c = this->cig_counts[zone_id];
 
-		this->lock_area(sem, x, y);
-		this->notify_arrived(x+1, y+1);
-		area_cleared = this->litter_zone(grid, sem, x, y, c);
-		if (!area_cleared) {
-			return this->_start_working(grid, sem);
-		}
-		this->unlock_area(sem);
-		this->notify_action_complete();
+	this->lock_area(sem, x, y);
+	this->notify_arrived(x+1, y+1);
+	area_cleared = this->litter_zone(grid, sem, x, y, c);
+	if (this->is_stopped())
+		return;
+	if (!area_cleared) {
+		return this->_start_working(grid, sem, zone_id);
 	}
-
-	// Notify exit
-	this->notify_exited();
+	this->unlock_area(sem);
+	this->notify_action_complete();
 }
 
 
@@ -53,9 +49,11 @@ bool SneakySmoker::litter_zone(
 				return false;
 			usleep(this->working_time * 2);
 		}
+		this->lock_mutex();
 		grid[cell.first][cell.second]++;
 		c--;
 		this->notify_action(cell.first, cell.second);
+		this->unlock_mutex();
 	}
 	return true;
 }
