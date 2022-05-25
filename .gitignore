@@ -42,3 +42,7 @@ test
 
 __pycache__/
 *.pyc
+
+
+334/hw-solutions/hw2/io/
+334/hw-solutions/hw2/outputs/

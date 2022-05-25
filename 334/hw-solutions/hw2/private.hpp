@@ -28,17 +28,8 @@ public:
 	void start_working(
 		std::vector<std::vector<int> > &grid, 
 		std::vector<std::unique_ptr<std::binary_semaphore>> &sem
-	) {
-		this->tid = pthread_self();
-		this->n_col = grid[0].size();
-		for (int i = 0; i < this->zones.size(); i++) {
-			this->_start_working(grid, sem, i);
-			if (this->is_stopped())
-				return;
-		}
-		this->notify_exited();
-	}
-
+	);
+	
 	// Add left corner cell of duty zone for private.
 	void addZone(int x, int y);
 

@@ -75,6 +75,7 @@ void fire_commands(pthread_t *thr_proper_privates, pthread_t *thr_sneaky_smokers
 				}
 				break;
 			case hw2_actions::ORDER_STOP:
+				pthread_mutex_lock(&mutex);
 				hw2_notify(commands[i].action, 0, 0, 0);
 				for (int t = 0; t < P.size(); t++) {
 					P[t].stop(S);
@@ -84,6 +85,7 @@ void fire_commands(pthread_t *thr_proper_privates, pthread_t *thr_sneaky_smokers
 					SS[t].stop(S);
 					pthread_cancel(thr_sneaky_smokers[t]);
 				}
+				pthread_mutex_unlock(&mutex);
 				break;
 			default:
 				pthread_mutex_lock(&mutex);
@@ -131,7 +133,6 @@ void *start_smoking(void* arguments) {
 	// Notify ready
 	smoker->notify_created();
 	smoker->start_working(G, S);
-    return NULL;
 }
 
 
@@ -143,7 +144,6 @@ void *start_collecting(void* arguments) {
 	// Notify ready
 	properpvt->notify_created();
 	properpvt->start_working(G, S);
-    return NULL;
 }
 
 
@@ -151,24 +151,24 @@ int main() {
 	Parser parser;
 	parser.parse();
 
-	// std::cout << "=============OUT===========\n";
-	// std::cout << "Grid size: " << parser.grid_size[0] << " x " << parser.grid_size[1] << std::endl;
-	// print_2darr(parser.grid);
-	// std::cout << "ProperPrivates: " << parser.privates.size() << std::endl;
-	// print_arr(parser.privates);
-	// std::cout << "SneakySmokers: " << parser.sneaky_smokers.size() << std::endl;
-	// print_arr(parser.sneaky_smokers);
-	// std::cout << "Commands: " << parser.commands.size() << std::endl;
-	// for (int i = 0; i < parser.commands.size(); i++) {
-	// 	std::string cmd_str;
-	// 	if (parser.commands[i].action == hw2_actions::ORDER_STOP)
-	// 		cmd_str = "STOP";
-	// 	else if (parser.commands[i].action == hw2_actions::ORDER_BREAK)
-	// 		cmd_str = "BREAK";
-	// 	else
-	// 		cmd_str = "CONTINUE";
-	// 	std::cout << "Command '" << cmd_str << "' at msec " << parser.commands[i].notify_time << std::endl;
-	// }
+	std::cout << "=============OUT===========\n";
+	std::cout << "Grid size: " << parser.grid_size[0] << " x " << parser.grid_size[1] << std::endl;
+	print_2darr(parser.grid);
+	std::cout << "ProperPrivates: " << parser.privates.size() << std::endl;
+	print_arr(parser.privates);
+	std::cout << "SneakySmokers: " << parser.sneaky_smokers.size() << std::endl;
+	print_arr(parser.sneaky_smokers);
+	std::cout << "Commands: " << parser.commands.size() << std::endl;
+	for (int i = 0; i < parser.commands.size(); i++) {
+		std::string cmd_str;
+		if (parser.commands[i].action == hw2_actions::ORDER_STOP)
+			cmd_str = "STOP";
+		else if (parser.commands[i].action == hw2_actions::ORDER_BREAK)
+			cmd_str = "BREAK";
+		else
+			cmd_str = "CONTINUE";
+		std::cout << "Command '" << cmd_str << "' at msec " << parser.commands[i].notify_time << std::endl;
+	}
 	// std::cout << "=============OUT===========\n";
 
 	for (int i = 0; i < parser.grid_size[0]; i++) {
@@ -186,8 +186,8 @@ int main() {
 
 	// Multi-threading
 	// https://stackoverflow.com/a/15717075
-	pthread_t thr_proper_privates[P.size()];
-	pthread_t thr_sneaky_smokers[SS.size()];
+	pthread_t thr_proper_privates[(int)P.size()];
+	pthread_t thr_sneaky_smokers[(int)SS.size()];
 	thread_args_t<ProperPrivate> pp_args[P.size()];
 	thread_args_t<SneakySmoker> ss_args[SS.size()];
 	int rc;

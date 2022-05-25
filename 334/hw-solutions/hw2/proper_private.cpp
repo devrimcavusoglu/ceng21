@@ -40,10 +40,8 @@ bool ProperPrivate::collect_zone(
 					if (this->is_stopped() or this->is_on_break())
 						return false; 
 				}
-				this->lock_mutex();
 				grid[i][j]--;
 				this->notify_action(i, j);
-				this->unlock_mutex();
 			}
 		}
 	}
