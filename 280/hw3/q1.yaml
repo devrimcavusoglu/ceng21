@@ -1,0 +1,28 @@
+name: q1
+source code: |
+  # Adds 1 to a binary number.
+  input: '00011'
+  blank: ' '
+  start state: q0
+  table:
+    q0:
+      0 : {write: ' ', R: q1}
+    q1:
+      [0, 1] : R
+      ' ': {L: q2}
+    q2:
+      1: {write: ' ', L: q3}
+    q3:
+      [0,1]: L
+      ' ': {R: q4}
+    q4:
+      0 : {write: ' ', R: q1}
+      ' ': {R: h}
+    h:
+positions:
+  q0: {x: 380.51, y: 272.7, fixed: false}
+  q1: {x: 349.63, y: 135.5, fixed: false}
+  q2: {x: 303.26, y: 276.11, fixed: false}
+  q3: {x: 431.55, y: 356.16, fixed: false}
+  q4: {x: 476.57, y: 213.03, fixed: false}
+  h: {x: 628.75, y: 180.5}
