@@ -1,0 +1,31 @@
+name: example
+source code: |-
+
+  input: 'baxabbbba'
+  blank: ' '
+  start state: 0
+  table:
+
+    0:
+      a      : {write: a, R}
+      b      : {write: b, R}
+      x      : {write: ' ', R: 1}
+
+    1:
+      a      : {write: ' ', L: 2}
+      b      : {write: ' ', L: 3}
+      ' '    : {write: ' ', L: accept}
+    2:
+      ' '    : {write: a, R: 4}
+    3:
+      ' '    : {write: b, R: 4}
+    4:
+      ' '    : {write: ' ', R: 1}
+    accept:
+positions:
+  '0': {x: 223.76, y: 248.23}
+  '1': {x: 397.86, y: 244.62}
+  '2': {x: 517.9, y: 321.59}
+  '3': {x: 513.62, y: 182.91}
+  '4': {x: 624.06, y: 247.45}
+  accept: {x: 397.61, y: 406.43}

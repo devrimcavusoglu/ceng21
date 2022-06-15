@@ -1,0 +1,36 @@
+name: q2
+source code: |-
+  # Adds 1 to a binary number.
+  input: ''
+  blank: ' '
+  start state: start
+  table:
+    start:
+      [0,1, Z, O]: {R: swipe_right}
+    swipe_right:
+      [0,1, Z, O]: R
+      ' ': {L: swipe_left}
+    zero_writer:
+      [0, 1, O, Z]: R
+      ' ': {write: Z, L: swipe_left}
+    one_writer:
+      [0,1,O,Z]: R
+      ' ': {write: O, L: swipe_left}
+    swipe_left:
+      ['Z','O']: L
+      0: {write: Z, R: zero_writer}
+      1: {write: O, R: one_writer}
+      ' ': {R: fix}
+    fix:
+      Z: {write: 0, R}
+      O: {write: 1, R}
+      ' ': {L: h}
+    h:
+positions:
+  start: {x: 443.57, y: 48.06, fixed: false}
+  swipe_right: {x: 323.37, y: 119.96, fixed: false}
+  zero_writer: {x: 549.99, y: 150.05}
+  one_writer: {x: 276.33, y: 183.37}
+  swipe_left: {x: 419.96, y: 225.51, fixed: false}
+  fix: {x: 542.8, y: 311.48}
+  h: {x: 446.32, y: 395.96}
