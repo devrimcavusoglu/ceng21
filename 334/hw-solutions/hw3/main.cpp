@@ -16,14 +16,14 @@ int main(int argc, char **argv) {
 	else if (argc > 2) {
 		std::cerr << "Provide only a single argument path.\n"; exit(-1);
 	}
-	std::string image_file = argv[1];
-	printf("Im here........\n");
+	char *image_file = argv[1];
+	printf("image_file: %s\n", image_file);
 	Fat32Image fat32img;
-	printf("Im here........\n");
-	fat32img.read(image_file);
+	fat32img.read_image(image_file);
 
 	// Initially cwd is root '/'
 	fs::path cwd = fs::path("/");
+	printf("cwd: %s\n", cwd.c_str());
 
 	parsed_input *p = new parsed_input;
 	std::string input;
