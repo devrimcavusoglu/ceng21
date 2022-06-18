@@ -1,6 +1,5 @@
 #include <iostream>
 #include <string>
-#include <filesystem>
 
 #include "parser.h"
 #include "image.hpp"
@@ -18,8 +17,7 @@ int main(int argc, char **argv) {
 	}
 	char *image_file = argv[1];
 	printf("image_file: %s\n", image_file);
-	Fat32Image fat32img;
-	fat32img.read_image(image_file);
+	Fat32Image fat32img(image_file);
 
 	// Initially cwd is root '/'
 	fs::path cwd = fs::path("/");
@@ -46,15 +44,19 @@ int main(int argc, char **argv) {
 		}
 
 		parse(p, input.data());
-		std::string arg1 = p->arg1;
-		std::string arg2 = p->arg2;
+		std::string arg1 = (p->arg1) ? p->arg1 : "";
+		std::string arg2 = (p->arg2) ? p->arg2 : "";
 
 		if (p->type == input_type::CD) {
 			if (arg1 == "..") {
 				cwd = cwd.parent_path();
 			}
-			else
-				cwd /= p->arg1;
+			else {
+				fs::path new_path = cwd / arg1;
+				bool valid = fat32img.change_directory(new_path);
+				if (valid)
+					cwd = new_path;
+			}
 		}
 	}
 }
