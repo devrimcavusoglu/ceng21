@@ -16,24 +16,38 @@ public:
 	// reads the image from given path and parses the image.
 	Fat32Image(char *path);
 
+	fs::path get_cwd();
+
 	// cd into given path. Returns true if valid, false otherwise.
-	bool change_directory(fs::path path);
+	void change_directory(fs::path path);
 
 private:
 	void read_bpb(int fd);
 
 	void read_ebpb(int fd);
 
-	FatFile83 read_file(int sector_id);
+	FatFile83 read_entry(int entry_id);
+
+	void read_cluster(int cluster_id, void *buf);
 
 	int cluster2sector(int cluster_id);
 	
 	int sector2byte(int sector_id);
 
+	int cluster2byte(int cluster_id);
+
+	void search_path(fs::path path) {
+		
+	}
+
 	// attributes
 	fs::path image_file; // file path
 	BPB_struct BPB;
 	BPB32_struct EBPB;
-	std::vector<FatFileEntry> file_entries;
-	int data_area_start;
+
+	int fat_entry_offset; // FAT table offset (bytes)
+	int data_area_start; // Data area offset (sector)
+	unsigned int cluster_size; // Cluster size in bytes
+
+	fs::path cwd;
 };

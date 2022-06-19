@@ -48,15 +48,7 @@ int main(int argc, char **argv) {
 		std::string arg2 = (p->arg2) ? p->arg2 : "";
 
 		if (p->type == input_type::CD) {
-			if (arg1 == "..") {
-				cwd = cwd.parent_path();
-			}
-			else {
-				fs::path new_path = cwd / arg1;
-				bool valid = fat32img.change_directory(new_path);
-				if (valid)
-					cwd = new_path;
-			}
+			fat32img.change_directory(arg1);
 		}
 	}
 }

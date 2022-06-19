@@ -16,20 +16,32 @@ Fat32Image::Fat32Image(char *path) {
 	this->read_bpb(fd);
 	this->read_ebpb(fd);
 	close(fd);
+
+	this->fat_entry_offset = BPB.ReservedSectorCount * BPB.BytesPerSector;
+	this->cluster_size = BPB.BytesPerSector * BPB.SectorsPerCluster;
+	this->data_area_start = BPB.ReservedSectorCount + BPB.NumFATs * EBPB.FATSize;
+	this->cwd = "/"; // set CWD as root
+
+	printf("FATSize: %d | RootCluster: %d\n", EBPB.FATSize, EBPB.RootCluster);
+	printf(
+		"BytesPerSector: %d | SectorsPerCluster: %d | NumFATs: %d | TotalSectors32: %d\n",
+		BPB.BytesPerSector,
+		BPB.SectorsPerCluster,
+		BPB.NumFATs,
+		BPB.TotalSectors32
+	);
+	printf("data area offset: %d\n", this->data_area_start);
 }
 
 
-bool Fat32Image::change_directory(fs::path path) {
-	FatFile83 fat_file = this->read_file(this->BPB.ReservedSectorCount);
-	printf("name: %s\n", fat_file.filename);
-	printf("file_size: %d\n", fat_file.fileSize);
-	printf("1st cluster: %d\n", fat_file.firstCluster);
-	printf("creationTimeMs: %d\n", fat_file.lastAccessTime);
-	FatFile83 root_cluster = this->read_file(fat_file.firstCluster);
-	printf("name: %s\n", root_cluster.filename);
-	printf("file_size: %d\n", root_cluster.fileSize);
-	printf("1st cluster: %d\n", root_cluster.firstCluster);
-	return false;
+fs::path Fat32Image::get_cwd() {
+	return this->cwd;
+}
+
+
+void Fat32Image::change_directory(fs::path path) {
+	std::cout << "path: " << path << std::endl;
+
 }
 
 // Private members
@@ -68,10 +80,10 @@ void Fat32Image::read_ebpb(int fd) {
 	read(fd, EBPB.BS_FileSystemType, 8);
 }
 
-FatFile83 Fat32Image::read_file(int sector_id) {
+FatFile83 Fat32Image::read_entry(int entry_id) {
 	FatFile83 fat_file;
 
-	int offset = this->sector2byte(sector_id);
+	int offset = this->fat_entry_offset + entry_id * 32;
 	int fd = open(this->image_file.c_str(), O_RDONLY);
 	lseek(fd, offset, SEEK_SET); // re-position the fd to the offset
 	read(fd, fat_file.filename, 8);
@@ -89,11 +101,24 @@ FatFile83 Fat32Image::read_file(int sector_id) {
 	return fat_file;
 }
 
+void Fat32Image::read_cluster(int cluster_id, void *buf) {
+	int offset = this->cluster2byte(cluster_id);
+	printf("offset: %d\n", offset);
+	int fd = open(this->image_file.c_str(), O_RDONLY);
+	lseek(fd, offset, SEEK_SET); // re-position the fd to the offset
+	ssize_t total_read = read(fd, buf, this->cluster_size);
+	printf("%ld | %p\n", total_read, buf);
+}
+
 
 int Fat32Image::cluster2sector(int cluster_id) {
-	return cluster_id * this->BPB.SectorsPerCluster;
+	return this->data_area_start + cluster_id * this->BPB.SectorsPerCluster;
 }
 
 int Fat32Image::sector2byte(int sector_id) {
 	return sector_id * this->BPB.BytesPerSector;
+}
+
+int Fat32Image::cluster2byte(int cluster_id) {
+	return this->sector2byte(this->cluster2sector(cluster_id));
 }
