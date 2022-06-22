@@ -22,11 +22,11 @@ public:
 	void change_directory(fs::path path);
 
 private:
-	void read_bpb(int fd);
+	void read_bpb();
 
-	void read_ebpb(int fd);
+	uint32_t get_fat_entry(int entry_id);
 
-	FatFile83 read_entry(int entry_id);
+	FatFileEntry get_dir_entry(int entry_id);
 
 	void read_cluster(int cluster_id, void *buf);
 
@@ -36,14 +36,9 @@ private:
 
 	int cluster2byte(int cluster_id);
 
-	void search_path(fs::path path) {
-		
-	}
-
 	// attributes
 	fs::path image_file; // file path
 	BPB_struct BPB;
-	BPB32_struct EBPB;
 
 	int fat_entry_offset; // FAT table offset (bytes)
 	int data_area_start; // Data area offset (sector)

@@ -19,10 +19,6 @@ int main(int argc, char **argv) {
 	printf("image_file: %s\n", image_file);
 	Fat32Image fat32img(image_file);
 
-	// Initially cwd is root '/'
-	fs::path cwd = fs::path("/");
-	printf("cwd: %s\n", cwd.c_str());
-
 	parsed_input *p = new parsed_input;
 	std::string input;
 
@@ -30,7 +26,7 @@ int main(int argc, char **argv) {
 
 	while (true) {
 		// Used to prompt markers for inputs and bundle creation
-		if (input_marker) std::cout << cwd.c_str() << "> ";
+		if (input_marker) std::cout << fat32img.get_cwd().c_str() << "> ";
 
 		std::getline(std::cin >> std::ws, input);
 
