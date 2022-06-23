@@ -6,6 +6,18 @@
 // Bytes per sector is fixed at 512 in this homework.
 #define BPS 512
 
+#define FAT_ENTRY_MASK 0x0fffffff
+
+
+#define FAT_FILE_TIME_HOUR_MASK 0x0000f800
+#define FAT_FILE_TIME_MINUTE_MASK 0x000007e0
+#define FAT_FILE_TIME_SECOND_MASK 0x0000001f
+
+#define FAT_FILE_DATE_YEAR_MASK 0x0000fe00
+#define FAT_FILE_DATE_MONTH_MASK 0x000001e0
+#define FAT_FILE_DATE_DAY_MASK 0x0000001f
+
+
 #pragma pack(push, 1)
 // Starting at offset 36 into the BIOS Parameter Block (BRB) for FAT32
 typedef struct struct_BPBFAT32_struct {
@@ -75,8 +87,21 @@ typedef union struct_FatFileEntry {
     FatFile83 msdos;
     FatFileLFN lfn;
 } FatFileEntry;
+
+
+void ustrtime(uint16_t time, uint8_t *time_array);
+
+void ustrdate(uint16_t date, uint8_t *date_array);
+
+void read_bpb(int fd, BPB_struct &bpb);
+
+uint32_t read_fat_entry(int fd, int offset);
+
+FatFileEntry read_dir_entry(int fd, int offset);
+
+void read_data(int fd, int offset, void *buf, unsigned int size);
+
+
 #pragma pack(pop)
-
-
 
 #endif //HW3_FAT32_H

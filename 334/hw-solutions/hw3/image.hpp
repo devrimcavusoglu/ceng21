@@ -1,11 +1,15 @@
-#include <string>
-#include <vector>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <iostream>
-#include <unistd.h>
+#ifndef _IMAGE_HPP_
+#define _IMAGE_HPP_
+
 #include <filesystem>
+#include <fcntl.h>
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "fat32.h"
 
@@ -22,13 +26,11 @@ public:
 	void change_directory(fs::path path);
 
 private:
-	void read_bpb();
-
 	uint32_t get_fat_entry(int entry_id);
 
-	FatFileEntry get_dir_entry(int entry_id);
+	FatFileEntry get_dir_entry(int cluster_id);
 
-	void read_cluster(int cluster_id, void *buf);
+	void get_data(int cluster_id, void *buf);
 
 	int cluster2sector(int cluster_id);
 	
@@ -46,3 +48,5 @@ private:
 
 	fs::path cwd;
 };
+
+#endif //_IMAGE_HPP_
