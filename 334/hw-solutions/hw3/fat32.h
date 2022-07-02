@@ -8,14 +8,17 @@
 
 #define FAT_ENTRY_MASK 0x0fffffff
 
+#define FAT_ENTRY_RESERVED 0x0ffffff8
+#define FAT_ENTRY_BAD 0x0ffffff7
+#define FAT_ENTRY_LAST 0x0ffffff8
 
-#define FAT_FILE_TIME_HOUR_MASK 0x0000f800
-#define FAT_FILE_TIME_MINUTE_MASK 0x000007e0
-#define FAT_FILE_TIME_SECOND_MASK 0x0000001f
+#define FAT_FILE_TIME_HOUR_MASK 0x1f
+#define FAT_FILE_TIME_MINUTE_MASK 0x7e0
+#define FAT_FILE_TIME_SECOND_MASK 0xf800
 
-#define FAT_FILE_DATE_YEAR_MASK 0x0000fe00
-#define FAT_FILE_DATE_MONTH_MASK 0x000001e0
-#define FAT_FILE_DATE_DAY_MASK 0x0000001f
+#define FAT_FILE_DATE_YEAR_MASK 0x7f
+#define FAT_FILE_DATE_MONTH_MASK 0x780
+#define FAT_FILE_DATE_DAY_MASK 0xf800
 
 
 #pragma pack(push, 1)
@@ -59,7 +62,7 @@ typedef struct struct_FatFile83 {
     uint8_t filename[8];           // Filename for short filenames. First byte have special values.
     uint8_t extension[3];          // Remaining part used for file extension
     uint8_t attributes;            // Attributes
-    uint8_t reserved;              // Reserved to mark extended attributes
+    uint8_t reserved;               // Reserved to mark extended attributes
     uint8_t creationTimeMs;        // Creation time down to ms precision
     uint16_t creationTime;         // Creation time with H:M:S format
     uint16_t creationDate;         // Creation date with Y:M:D format
@@ -88,6 +91,9 @@ typedef union struct_FatFileEntry {
     FatFileLFN lfn;
 } FatFileEntry;
 
+void xread(int fd, void *ptr, unsigned int bytes);
+
+void read_fat_table(int fd, int start, int end, uint32_t *fat_table);
 
 void ustrtime(uint16_t time, uint8_t *time_array);
 
@@ -97,7 +103,9 @@ void read_bpb(int fd, BPB_struct &bpb);
 
 uint32_t read_fat_entry(int fd, int offset);
 
-FatFileEntry read_dir_entry(int fd, int offset);
+void read_lfn(int fd, int offset, FatFileEntry &fat_entry);
+
+void read_dir_entry(int fd, int offset, FatFileEntry &fat_entry);
 
 void read_data(int fd, int offset, void *buf, unsigned int size);
 

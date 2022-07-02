@@ -1,3 +1,6 @@
+#include <iterator>
+#include <vector>
+
 #include "image.hpp"
 #include "util.hpp"
 
@@ -9,11 +12,10 @@ Fat32Image::Fat32Image(char *path) {
 	this->image_file = path;
 	int fd = open(this->image_file.c_str(), O_RDONLY);
 	read_bpb(fd, this->BPB);
-	close(fd);
 
 	this->fat_entry_offset = BPB.ReservedSectorCount * BPB.BytesPerSector;
-	this->cluster_size = BPB.BytesPerSector * BPB.SectorsPerCluster;
-	this->data_area_start = BPB.ReservedSectorCount + BPB.NumFATs * BPB.extended.FATSize;
+	this->bytes_per_cluster = BPB.BytesPerSector * BPB.SectorsPerCluster;
+	this->data_area_start = this->sector2byte(BPB.ReservedSectorCount + BPB.NumFATs * BPB.extended.FATSize);
 	this->cwd = "/"; // set CWD as root
 
 	printf(
@@ -77,6 +79,11 @@ Fat32Image::Fat32Image(char *path) {
 	);
 	printf("fat entry offset: %d\n", this->fat_entry_offset);
 	printf("data area offset: %d\n", this->data_area_start);
+	printf("bytes per cluster: %d\n", this->bytes_per_cluster);
+	uint32_t fat_table_temp[sector2byte(BPB.extended.FATSize)/4];
+	read_fat_table(fd, fat_entry_offset, fat_entry_offset + sector2byte(BPB.extended.FATSize), fat_table_temp);
+	this->fat_table = fat_table_temp;
+	close(fd);
 }
 
 
@@ -87,9 +94,10 @@ fs::path Fat32Image::get_cwd() {
 
 void Fat32Image::change_directory(fs::path path) {
 	std::cout << "path: " << path << std::endl;
-	this->get_fat_entry(11);
-	this->get_fat_entry(12);
 	this->get_dir_entry(2);
+	// this->get_dir_entry(3);
+	// this->get_dir_entry(4);
+	// this->get_dir_entry(5);
 	// uint8_t buf[1024];
 	// this->read_cluster(root_dir.msdos.firstCluster, buf); // root
 	// printf("buf: %\n", buf);
@@ -97,36 +105,63 @@ void Fat32Image::change_directory(fs::path path) {
 
 // Private members
 
-uint32_t Fat32Image::get_fat_entry(int entry_id) {
-	int fd = open(this->image_file.c_str(), O_RDONLY);
-	int offset = this->fat_entry_offset + entry_id * 4; // in bytes
-	uint32_t res = read_fat_entry(fd, offset);
-	close(fd);
-	printf("0x%08x\n", res);
-	return res;
-}
-
 FatFileEntry Fat32Image::get_dir_entry(int cluster_id) {
 	int fd = open(this->image_file.c_str(), O_RDONLY);
-	FatFileEntry entry = read_dir_entry(fd, this->cluster2byte(cluster_id));
+	FatFileEntry entry;
+	printf("--cluster #%d @ %u\n", cluster_id, cluster2byte(cluster_id));
+	read_dir_entry(fd, this->cluster2byte(cluster_id), entry);
 	close(fd);
-	// printf(
-	// 	"fname: %s\n"
-	// 	"name1: %s\n"
-	// 	"seq-no: %hhu\n"
-	// 	"csum: %hhu\n"
-	// 	"creationtimems: %hhu\n",
-	// 	entry.msdos.filename,
-	// 	entry.lfn.name1,
-	// 	entry.lfn.sequence_number,
-	// 	entry.lfn.checksum,
-	// 	entry.msdos.creationTimeMs
-	// );
+	printf("seq-no: %d\n", entry.lfn.sequence_number);
+	printf(
+		"fname: %s.%s\n"
+		"name: %s | %s | %s\n"
+		"seq-no: %u\n"
+		"csum: %u\n"
+		"creationtimems: %u\n"
+		"fileSize: %u\n",
+		entry.msdos.filename,
+		entry.msdos.extension,
+		entry.lfn.name1,
+		entry.lfn.name2, 
+		entry.lfn.name3,
+		entry.lfn.sequence_number,
+		entry.lfn.checksum,
+		entry.msdos.creationTimeMs,
+		entry.msdos.fileSize
+	);
+	
+	// size_t len16 = 6 * sizeof(uint16_t);
+	// size_t len8 = 20;
+	// uint16_t *_utf16 = entry.lfn.name2;
+	// char utf8[20], *_utf8 = utf8;
+
+	// iconv_t utf16_to_utf8 = iconv_open("UTF-8", "UTF-16");
+
+	// size_t result = iconv(utf16_to_utf8, (char **)&_utf16, &len16, &_utf8, &len8);
+	// utf8[19] = '\0';
+	// printf("%d - %s\n", (int)result, utf8);
+
+	uint16_t *bytes = entry.lfn.name2;
+	char str[101];
+	auto p = str;
+	p += sprintf(p, "%d", bytes[0]);
+
+	for (int i = 1; i < 7; ++i) {
+		p += sprintf(p, ", %d", bytes[i]);
+	}
+	p[100] = 0;
+	puts(str);
+    // std::cout << s;
+
+
+	printf(
+		"first byte of fname: 0x%02x\n", entry.msdos.filename[0]
+	);
 	uint8_t time_arr[3];
 	uint8_t date_arr[3];
-	ustrtime(entry.msdos.creationTime, time_arr);
-	ustrdate(entry.msdos.creationDate, date_arr);
-	printf("%hhu-%hhu-%hhu %hhu:%hhu:%hhu\n", 
+	ustrtime(entry.msdos.modifiedTime, time_arr);
+	ustrdate(entry.msdos.modifiedDate, date_arr);
+	printf("%u/%u/%u %u:%u:%u\n", 
 		date_arr[0], date_arr[1], date_arr[2],
 		time_arr[0], time_arr[1], time_arr[2]);
 	return entry;
@@ -134,12 +169,12 @@ FatFileEntry Fat32Image::get_dir_entry(int cluster_id) {
 
 void Fat32Image::get_data(int cluster_id, void *buf) {
 	int fd = open(this->image_file.c_str(), O_RDONLY);
-	read_data(fd, this->cluster2byte(cluster_id), buf, this->cluster_size);
+	read_data(fd, this->cluster2byte(cluster_id), buf, this->bytes_per_cluster);
 	close(fd);
 }
 
 int Fat32Image::cluster2byte(int cluster_id) {
-	return this->sector2byte(this->data_area_start) + cluster_id * this->BPB.SectorsPerCluster;
+	return this->data_area_start + (cluster_id - 2) * this->BPB.SectorsPerCluster;
 }
 
 int Fat32Image::sector2byte(int sector_id) {

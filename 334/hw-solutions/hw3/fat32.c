@@ -5,6 +5,21 @@
 #include "fat32.h"
 
 
+void read_fat_table(int fd, int start, int end, uint32_t *fat_table) {
+	int total_entries = (end - start) / 4;
+	printf("total entries: %d | start: %d | end: %d | current offset: %u\n", 
+		total_entries, 
+		start,
+		end,
+		lseek(fd, 0, SEEK_CUR));
+	lseek(fd, start, SEEK_SET);
+	printf("total entries: %d | current offset: %u\n", 
+		total_entries, 
+		lseek(fd, 0, SEEK_CUR));
+	read(fd, fat_table, end - start);
+}
+
+
 void read_bpb(int fd, BPB_struct &BPB) {
 	// BPB
 	read(fd, BPB.BS_JumpBoot, 3);
@@ -49,19 +64,24 @@ uint32_t read_fat_entry(int fd, int offset) {
 }
 
 
-FatFileEntry read_dir_entry(int fd, int offset) {
-	FatFileEntry fat_entry;
-	lseek(fd, offset, SEEK_SET); // re-position the fd to the offset
+void read_lfn(int fd, int offset, FatFileEntry &fat_entry) {
+	
+}
+
+
+void read_dir_entry(int fd, int offset, FatFileEntry &fat_entry) {
+	lseek(fd, offset, SEEK_SET);
 
 	// lfn
 	read(fd, &fat_entry.lfn.sequence_number, 1);
-	read(fd, fat_entry.lfn.name1, 5);
+	read(fd, &fat_entry.lfn.name1, 10);
 	read(fd, &fat_entry.lfn.attributes, 1);
 	read(fd, &fat_entry.lfn.reserved, 1);
 	read(fd, &fat_entry.lfn.checksum, 1);
-	read(fd, fat_entry.lfn.name2, 6);
+	read(fd, &fat_entry.lfn.name2, 12);
 	read(fd, &fat_entry.lfn.firstCluster, 2);
-	read(fd, fat_entry.lfn.name3, 2);
+	read(fd, &fat_entry.lfn.name3, 4);
+
 
 	// msdos
 	read(fd, fat_entry.msdos.filename, 8);
@@ -72,11 +92,24 @@ FatFileEntry read_dir_entry(int fd, int offset) {
 	read(fd, &fat_entry.msdos.creationTime, 2);
 	read(fd, &fat_entry.msdos.creationDate, 2);
 	read(fd, &fat_entry.msdos.lastAccessTime, 2);
+	read(fd, &fat_entry.msdos.eaIndex, 2);
 	read(fd, &fat_entry.msdos.modifiedTime, 2);
 	read(fd, &fat_entry.msdos.modifiedDate, 2);
 	read(fd, &fat_entry.msdos.firstCluster, 2);
 	read(fd, &fat_entry.msdos.fileSize, 4);
-	return fat_entry;
+}
+
+void xread(int fd, void *ptr, unsigned int bytes) {
+	int offset = lseek(fd, 0, SEEK_CUR);
+	int rc = read(fd, ptr, bytes);
+	printf(
+		"read %u (%u) bytes.. %u/%u\n", 
+		rc,
+		bytes, 
+		offset,
+		lseek(fd, 0, SEEK_CUR)
+	);
+	// lseek(fd, offset+bytes, SEEK_SET);
 }
 
 
@@ -99,4 +132,5 @@ void ustrdate(uint16_t date, uint8_t *date_array) {
 	date_array[0] = date & FAT_FILE_DATE_YEAR_MASK;
 	date_array[1] = date & FAT_FILE_DATE_MONTH_MASK;
 	date_array[2] = date & FAT_FILE_DATE_DAY_MASK;
+	date_array[0] += 1970;
 }

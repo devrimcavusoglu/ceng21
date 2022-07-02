@@ -26,8 +26,6 @@ public:
 	void change_directory(fs::path path);
 
 private:
-	uint32_t get_fat_entry(int entry_id);
-
 	FatFileEntry get_dir_entry(int cluster_id);
 
 	void get_data(int cluster_id, void *buf);
@@ -43,8 +41,10 @@ private:
 	BPB_struct BPB;
 
 	int fat_entry_offset; // FAT table offset (bytes)
-	int data_area_start; // Data area offset (sector)
-	unsigned int cluster_size; // Cluster size in bytes
+	int data_area_start; // Data area offset (bytes)
+	unsigned int bytes_per_cluster; // Cluster size (bytes)
+
+	uint32_t *fat_table;
 
 	fs::path cwd;
 };
