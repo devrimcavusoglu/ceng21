@@ -4,8 +4,6 @@
 #include "parser.h"
 #include "image.hpp"
 
-namespace fs = std::filesystem;
-
 
 int main(int argc, char **argv) {
 	if (argc == 1) {

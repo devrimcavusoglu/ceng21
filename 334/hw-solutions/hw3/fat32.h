@@ -10,7 +10,9 @@
 
 #define FAT_ENTRY_RESERVED 0x0ffffff8
 #define FAT_ENTRY_BAD 0x0ffffff7
-#define FAT_ENTRY_LAST 0x0ffffff8
+#define FAT_ENTRY_EOC 0x0ffffff8
+
+#define FAT_DIR_ENTRY_DELETED 0xe5
 
 #define FAT_FILE_TIME_HOUR_MASK 0x1f
 #define FAT_FILE_TIME_MINUTE_MASK 0x7e0
@@ -86,7 +88,7 @@ typedef struct struct_FatFileLFN {
     uint16_t name3[2];      // 2 More chars of name (UTF-16 format)
 } FatFileLFN;
 
-typedef union struct_FatFileEntry {
+typedef struct struct_FatFileEntry {
     FatFile83 msdos;
     FatFileLFN lfn;
 } FatFileEntry;
@@ -103,9 +105,7 @@ void read_bpb(int fd, BPB_struct &bpb);
 
 uint32_t read_fat_entry(int fd, int offset);
 
-void read_lfn(int fd, int offset, FatFileEntry &fat_entry);
-
-void read_dir_entry(int fd, int offset, FatFileEntry &fat_entry);
+FatFileEntry read_dir_entry(int fd, int offset);
 
 void read_data(int fd, int offset, void *buf, unsigned int size);
 

@@ -1,5 +1,6 @@
 #include <fcntl.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "fat32.h"
@@ -64,24 +65,19 @@ uint32_t read_fat_entry(int fd, int offset) {
 }
 
 
-void read_lfn(int fd, int offset, FatFileEntry &fat_entry) {
-	
-}
-
-
-void read_dir_entry(int fd, int offset, FatFileEntry &fat_entry) {
+FatFileEntry read_dir_entry(int fd, int offset) {
+	FatFileEntry fat_entry;
 	lseek(fd, offset, SEEK_SET);
 
 	// lfn
 	read(fd, &fat_entry.lfn.sequence_number, 1);
-	read(fd, &fat_entry.lfn.name1, 10);
+	read(fd, fat_entry.lfn.name1, 5*2);
 	read(fd, &fat_entry.lfn.attributes, 1);
 	read(fd, &fat_entry.lfn.reserved, 1);
 	read(fd, &fat_entry.lfn.checksum, 1);
-	read(fd, &fat_entry.lfn.name2, 12);
+	read(fd, fat_entry.lfn.name2, 6*2);
 	read(fd, &fat_entry.lfn.firstCluster, 2);
-	read(fd, &fat_entry.lfn.name3, 4);
-
+	read(fd, fat_entry.lfn.name3, 2*2);
 
 	// msdos
 	read(fd, fat_entry.msdos.filename, 8);
@@ -97,6 +93,8 @@ void read_dir_entry(int fd, int offset, FatFileEntry &fat_entry) {
 	read(fd, &fat_entry.msdos.modifiedDate, 2);
 	read(fd, &fat_entry.msdos.firstCluster, 2);
 	read(fd, &fat_entry.msdos.fileSize, 4);
+
+	return fat_entry;
 }
 
 void xread(int fd, void *ptr, unsigned int bytes) {

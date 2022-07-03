@@ -1,20 +1,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <string>
+#include <vector>
 
 
-unsigned int_to_int(unsigned int k) {
-    char buffer[65]; /* any number higher than sizeof(unsigned int)*bits_per_byte(8) */
-    snprintf(buffer, sizeof(buffer), "%d", k);
-    return atoi(buffer);
-}
+std::string utf16bytestostr(uint16_t *chars);
 
-template <class T>
-std::string bytes2str(T *bytes) {
-	int n = sizeof(bytes);
-	char chars[n+1];
-    memcpy(chars, bytes, n);
-    chars[n] = '\0';
-    std::string s(chars);
-    return s;
-}
+/**
+ * Converts the path 'p' into tokenized set of strings. p needs to be a path string, e.g. "/home/a/b/c.txt".
+ * 
+ * Returns: vector<string>
+ * 
+ * You also have the option to get "/" as the root element, instead of an empty string "". Check the .cpp file for that.
+ */
+std::vector<std::string> tokenizeStringPath(std::string p);

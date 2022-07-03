@@ -4,16 +4,21 @@
 #include <filesystem>
 #include <fcntl.h>
 #include <iostream>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <vector>
 
 #include "fat32.h"
 
+
 namespace fs = std::filesystem;
+
+typedef struct struct_path {
+	fs::path path;
+	int cluster_id;
+} path_t;
 
 class Fat32Image {
 public:
@@ -26,9 +31,13 @@ public:
 	void change_directory(fs::path path);
 
 private:
-	FatFileEntry get_dir_entry(int cluster_id);
+	void locate(fs::path path);
 
-	void get_data(int cluster_id, void *buf);
+	// Returns directory entries from cluster content.
+	std::vector<FatFileEntry> get_dir_entries(int cluster_id);
+
+	// Returns the raw content of cluster as string.
+	std::string get_cluster(int cluster_id);
 
 	int cluster2sector(int cluster_id);
 	
@@ -46,7 +55,7 @@ private:
 
 	uint32_t *fat_table;
 
-	fs::path cwd;
+	path_t cwd;
 };
 
 #endif //_IMAGE_HPP_

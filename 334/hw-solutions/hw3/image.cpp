@@ -1,8 +1,6 @@
-#include <iterator>
-#include <vector>
-
 #include "image.hpp"
 #include "util.hpp"
+
 
 namespace fs = std::filesystem;
 
@@ -16,7 +14,8 @@ Fat32Image::Fat32Image(char *path) {
 	this->fat_entry_offset = BPB.ReservedSectorCount * BPB.BytesPerSector;
 	this->bytes_per_cluster = BPB.BytesPerSector * BPB.SectorsPerCluster;
 	this->data_area_start = this->sector2byte(BPB.ReservedSectorCount + BPB.NumFATs * BPB.extended.FATSize);
-	this->cwd = "/"; // set CWD as root
+	this->cwd.path = "/"; // set CWD as root
+	this->cwd.cluster_id = BPB.extended.RootCluster;
 
 	printf(
 		"BPB Information:\n"
@@ -88,13 +87,13 @@ Fat32Image::Fat32Image(char *path) {
 
 
 fs::path Fat32Image::get_cwd() {
-	return this->cwd;
+	return this->cwd.path;
 }
 
 
 void Fat32Image::change_directory(fs::path path) {
 	std::cout << "path: " << path << std::endl;
-	this->get_dir_entry(2);
+	this->get_dir_entries(2);
 	// this->get_dir_entry(3);
 	// this->get_dir_entry(4);
 	// this->get_dir_entry(5);
@@ -105,12 +104,39 @@ void Fat32Image::change_directory(fs::path path) {
 
 // Private members
 
-FatFileEntry Fat32Image::get_dir_entry(int cluster_id) {
+void Fat32Image::locate(fs::path path) {
+	std::vector<std::string> spath = tokenizeStringPath(path);
+
+	if (spath[0] == ".." and cwd.path != "/") {
+		cwd.path = cwd.path.parent_path();
+	}
+	else
+		cwd.path = "/";
+
+	// while (this->fat_table[cwd.cluster_id] != FAT_ENTRY_EOC);
+}
+
+
+std::vector<FatFileEntry> Fat32Image::get_dir_entries(int cluster_id) {
+	std::vector<FatFileEntry> entries;
 	int fd = open(this->image_file.c_str(), O_RDONLY);
-	FatFileEntry entry;
 	printf("--cluster #%d @ %u\n", cluster_id, cluster2byte(cluster_id));
-	read_dir_entry(fd, this->cluster2byte(cluster_id), entry);
+	bool cond = true;
+	uint8_t is_allocated;
+	off_t cur_offset;
+	while (cond) {
+		entries.emplace_back(read_dir_entry(fd, this->cluster2byte(cluster_id)));
+
+		cur_offset = lseek(fd, 0, SEEK_CUR);
+		read(fd, &is_allocated, 1);
+		if (!is_allocated)
+			cond = false;
+		else
+			lseek(fd, cur_offset, SEEK_SET);
+	}
 	close(fd);
+	printf("len entries: %d\n", entries.size());
+	FatFileEntry entry = entries[0];
 	printf("seq-no: %d\n", entry.lfn.sequence_number);
 	printf(
 		"fname: %s.%s\n"
@@ -129,34 +155,14 @@ FatFileEntry Fat32Image::get_dir_entry(int cluster_id) {
 		entry.msdos.creationTimeMs,
 		entry.msdos.fileSize
 	);
-	
-	// size_t len16 = 6 * sizeof(uint16_t);
-	// size_t len8 = 20;
-	// uint16_t *_utf16 = entry.lfn.name2;
-	// char utf8[20], *_utf8 = utf8;
 
-	// iconv_t utf16_to_utf8 = iconv_open("UTF-8", "UTF-16");
+	std::string s = utf16bytestostr(entry.lfn.name1);
+	std::cout << s << std::endl;
 
-	// size_t result = iconv(utf16_to_utf8, (char **)&_utf16, &len16, &_utf8, &len8);
-	// utf8[19] = '\0';
-	// printf("%d - %s\n", (int)result, utf8);
+	printf("is string equal to file: %d\n", (s == "file"));
+	printf("is string equal to file1: %d\n", (s == "file1"));
+	printf("is string equal to file18: %d\n", (s == "file18"));
 
-	uint16_t *bytes = entry.lfn.name2;
-	char str[101];
-	auto p = str;
-	p += sprintf(p, "%d", bytes[0]);
-
-	for (int i = 1; i < 7; ++i) {
-		p += sprintf(p, ", %d", bytes[i]);
-	}
-	p[100] = 0;
-	puts(str);
-    // std::cout << s;
-
-
-	printf(
-		"first byte of fname: 0x%02x\n", entry.msdos.filename[0]
-	);
 	uint8_t time_arr[3];
 	uint8_t date_arr[3];
 	ustrtime(entry.msdos.modifiedTime, time_arr);
@@ -164,13 +170,17 @@ FatFileEntry Fat32Image::get_dir_entry(int cluster_id) {
 	printf("%u/%u/%u %u:%u:%u\n", 
 		date_arr[0], date_arr[1], date_arr[2],
 		time_arr[0], time_arr[1], time_arr[2]);
-	return entry;
+	return entries;
 }
 
-void Fat32Image::get_data(int cluster_id, void *buf) {
+std::string Fat32Image::get_cluster(int cluster_id) {
+	char buffer[this->bytes_per_cluster];
 	int fd = open(this->image_file.c_str(), O_RDONLY);
-	read_data(fd, this->cluster2byte(cluster_id), buf, this->bytes_per_cluster);
+	read_data(fd, this->cluster2byte(cluster_id), buffer, this->bytes_per_cluster);
+	// (!) No null termination to allow string concatenation.
 	close(fd);
+	std::string content = buffer;
+	return content;
 }
 
 int Fat32Image::cluster2byte(int cluster_id) {
