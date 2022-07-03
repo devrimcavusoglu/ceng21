@@ -12,7 +12,11 @@
 #define FAT_ENTRY_BAD 0x0ffffff7
 #define FAT_ENTRY_EOC 0x0ffffff8
 
-#define FAT_DIR_ENTRY_DELETED 0xe5
+#define FAT_DIRENT_DELETED 0xe5
+#define FAT_DIRENT_SEQLAST 0x40
+#define FAT_DIRENT_SEQNO_MASK 0xf
+#define FAT_DIRENT_SEQLAST_MASK 0xf0
+#define FAT_DIRENT_ISDIR 0x10
 
 #define FAT_FILE_TIME_HOUR_MASK 0x1f
 #define FAT_FILE_TIME_MINUTE_MASK 0x7e0
@@ -74,6 +78,7 @@ typedef struct struct_FatFile83 {
     uint16_t modifiedDate;         // Modification date with Y:M:D format
     uint16_t firstCluster;         // Last two bytes of the first cluster
     uint32_t fileSize;             // Filesize in bytes
+    bool is_dir;                   // Whether entry is directory or not
 } FatFile83;
 
 // The long filename information can be repeated as necessary before the original 8.3 filename entry
@@ -86,6 +91,9 @@ typedef struct struct_FatFileLFN {
     uint16_t name2[6];      // 6 More chars of name (UTF-16 format)
     uint16_t firstCluster;  // Always 0x0000
     uint16_t name3[2];      // 2 More chars of name (UTF-16 format)
+    uint16_t name[13];      // name1 + name2 + name3
+    bool seq_is_last;       // Whether entry is last LFN sequence or not
+    uint8_t seq_no;         // LFN sequence number
 } FatFileLFN;
 
 typedef struct struct_FatFileEntry {
@@ -108,6 +116,8 @@ uint32_t read_fat_entry(int fd, int offset);
 FatFileEntry read_dir_entry(int fd, int offset);
 
 void read_data(int fd, int offset, void *buf, unsigned int size);
+
+unsigned char cksum(unsigned char *pFcbName);
 
 
 #pragma pack(pop)

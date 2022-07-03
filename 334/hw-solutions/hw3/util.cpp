@@ -3,8 +3,11 @@
 
 std::string utf16bytestostr(uint16_t *chars) {
     std::string strname;
-    for (int i = 0; i <= sizeof(chars)/2; i++) 
+    for (int i = 0; i <= sizeof(chars); i++) {
+        if (chars[i] == 0)
+            break;
         strname += chars[i];
+    }
     return strname;
 }
 

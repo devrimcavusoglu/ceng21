@@ -15,9 +15,11 @@
 
 namespace fs = std::filesystem;
 
+
 typedef struct struct_path {
 	fs::path path;
-	int cluster_id;
+	int cluster;
+	std::vector<int> pclusters;
 } path_t;
 
 class Fat32Image {
@@ -31,7 +33,7 @@ public:
 	void change_directory(fs::path path);
 
 private:
-	void locate(fs::path path);
+	path_t locate(fs::path path);
 
 	// Returns directory entries from cluster content.
 	std::vector<FatFileEntry> get_dir_entries(int cluster_id);
@@ -56,6 +58,7 @@ private:
 	uint32_t *fat_table;
 
 	path_t cwd;
+	path_t root;
 };
 
 #endif //_IMAGE_HPP_

@@ -14,8 +14,10 @@ Fat32Image::Fat32Image(char *path) {
 	this->fat_entry_offset = BPB.ReservedSectorCount * BPB.BytesPerSector;
 	this->bytes_per_cluster = BPB.BytesPerSector * BPB.SectorsPerCluster;
 	this->data_area_start = this->sector2byte(BPB.ReservedSectorCount + BPB.NumFATs * BPB.extended.FATSize);
-	this->cwd.path = "/"; // set CWD as root
-	this->cwd.cluster_id = BPB.extended.RootCluster;
+
+	this->root.path = "/"; 
+	this->root.cluster = BPB.extended.RootCluster;
+	this->cwd = this->root; // set CWD as root
 
 	printf(
 		"BPB Information:\n"
@@ -104,16 +106,21 @@ void Fat32Image::change_directory(fs::path path) {
 
 // Private members
 
-void Fat32Image::locate(fs::path path) {
+path_t Fat32Image::locate(fs::path path) {
+	path_t current_directory = this->cwd;
 	std::vector<std::string> spath = tokenizeStringPath(path);
 
-	if (spath[0] == ".." and cwd.path != "/") {
-		cwd.path = cwd.path.parent_path();
+	if (spath[0] == ".." and !current_directory.pclusters.empty()) {
+		current_directory.path = current_directory.path.parent_path();
+		current_directory.cluster = current_directory.pclusters.back();
+		current_directory.pclusters.pop_back();
 	}
-	else
-		cwd.path = "/";
+	else 
+		current_directory = this->root;
 
-	// while (this->fat_table[cwd.cluster_id] != FAT_ENTRY_EOC);
+	while (this->fat_table[current_directory.cluster] != FAT_ENTRY_EOC) {
+
+	}
 }
 
 
@@ -123,53 +130,51 @@ std::vector<FatFileEntry> Fat32Image::get_dir_entries(int cluster_id) {
 	printf("--cluster #%d @ %u\n", cluster_id, cluster2byte(cluster_id));
 	bool cond = true;
 	uint8_t is_allocated;
-	off_t cur_offset;
+	off_t cur_offset = this->cluster2byte(cluster_id);
 	while (cond) {
-		entries.emplace_back(read_dir_entry(fd, this->cluster2byte(cluster_id)));
-
+		entries.emplace_back(read_dir_entry(fd, cur_offset));
 		cur_offset = lseek(fd, 0, SEEK_CUR);
 		read(fd, &is_allocated, 1);
-		if (!is_allocated)
+		if (is_allocated == 0)
 			cond = false;
 		else
 			lseek(fd, cur_offset, SEEK_SET);
 	}
 	close(fd);
 	printf("len entries: %d\n", entries.size());
-	FatFileEntry entry = entries[0];
-	printf("seq-no: %d\n", entry.lfn.sequence_number);
-	printf(
-		"fname: %s.%s\n"
-		"name: %s | %s | %s\n"
-		"seq-no: %u\n"
-		"csum: %u\n"
-		"creationtimems: %u\n"
-		"fileSize: %u\n",
-		entry.msdos.filename,
-		entry.msdos.extension,
-		entry.lfn.name1,
-		entry.lfn.name2, 
-		entry.lfn.name3,
-		entry.lfn.sequence_number,
-		entry.lfn.checksum,
-		entry.msdos.creationTimeMs,
-		entry.msdos.fileSize
-	);
+	
+	// FatFileEntry entry = entries[0];
 
-	std::string s = utf16bytestostr(entry.lfn.name1);
-	std::cout << s << std::endl;
+	// printf(
+	// 	"fname: %s.%s\n"
+	// 	"name: '%s'\n"
+	// 	"seq-no: %02x\n"
+	// 	"csum: %u\n"
+	// 	"creationtimems: %u\n"
+	// 	"fileSize: %u\n"
+	// 	"seq_is_last: %d\n"
+	// 	"seq-no: %d\n"
+	// 	"is dir?: %d\n",
+	// 	entry.msdos.filename,
+	// 	entry.msdos.extension,
+	// 	utf16bytestostr(entry.lfn.name).c_str(),
+	// 	entry.lfn.sequence_number,
+	// 	entry.lfn.checksum,
+	// 	entry.msdos.creationTimeMs,
+	// 	entry.msdos.fileSize,
+	// 	entry.lfn.seq_is_last,
+	// 	entry.lfn.seq_no,
+	// 	entry.msdos.is_dir
+	// );
 
-	printf("is string equal to file: %d\n", (s == "file"));
-	printf("is string equal to file1: %d\n", (s == "file1"));
-	printf("is string equal to file18: %d\n", (s == "file18"));
+	// uint8_t time_arr[3];
+	// uint8_t date_arr[3];
+	// ustrtime(entry.msdos.modifiedTime, time_arr);
+	// ustrdate(entry.msdos.modifiedDate, date_arr);
+	// printf("%u/%u/%u %u:%u:%u\n", 
+	// 	date_arr[0], date_arr[1], date_arr[2],
+	// 	time_arr[0], time_arr[1], time_arr[2]);
 
-	uint8_t time_arr[3];
-	uint8_t date_arr[3];
-	ustrtime(entry.msdos.modifiedTime, time_arr);
-	ustrdate(entry.msdos.modifiedDate, date_arr);
-	printf("%u/%u/%u %u:%u:%u\n", 
-		date_arr[0], date_arr[1], date_arr[2],
-		time_arr[0], time_arr[1], time_arr[2]);
 	return entries;
 }
 

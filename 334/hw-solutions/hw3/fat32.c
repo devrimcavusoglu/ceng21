@@ -79,6 +79,18 @@ FatFileEntry read_dir_entry(int fd, int offset) {
 	read(fd, &fat_entry.lfn.firstCluster, 2);
 	read(fd, fat_entry.lfn.name3, 2*2);
 
+	for (int i = 0; i < 13; i++) {
+		if (i<5) 
+			fat_entry.lfn.name[i] = fat_entry.lfn.name1[i];
+		else if (i<11) 
+			fat_entry.lfn.name[i] = fat_entry.lfn.name2[i-5];
+		else
+			fat_entry.lfn.name[i] = fat_entry.lfn.name3[i-11];
+	}
+
+	fat_entry.lfn.seq_is_last = (fat_entry.lfn.sequence_number & FAT_DIRENT_SEQLAST_MASK) == FAT_DIRENT_SEQLAST ? true : false;
+	fat_entry.lfn.seq_no = fat_entry.lfn.sequence_number & FAT_DIRENT_SEQNO_MASK;
+
 	// msdos
 	read(fd, fat_entry.msdos.filename, 8);
 	read(fd, fat_entry.msdos.extension, 3);
@@ -93,6 +105,8 @@ FatFileEntry read_dir_entry(int fd, int offset) {
 	read(fd, &fat_entry.msdos.modifiedDate, 2);
 	read(fd, &fat_entry.msdos.firstCluster, 2);
 	read(fd, &fat_entry.msdos.fileSize, 4);
+
+	fat_entry.msdos.is_dir = fat_entry.msdos.attributes & FAT_DIRENT_ISDIR ? true : false;
 
 	return fat_entry;
 }
@@ -131,4 +145,19 @@ void ustrdate(uint16_t date, uint8_t *date_array) {
 	date_array[1] = date & FAT_FILE_DATE_MONTH_MASK;
 	date_array[2] = date & FAT_FILE_DATE_DAY_MASK;
 	date_array[0] += 1970;
+}
+
+
+unsigned char cksum (unsigned char *pFcbName)
+{
+  short FcbNameLen;
+  unsigned char Sum;
+
+  Sum = 0;                                                                                                                                                                                           
+  for (FcbNameLen = 11; FcbNameLen != 0; FcbNameLen--)
+    {   
+      // NOTE: The operation is an unsigned char rotate right                 
+      Sum = ((Sum & 1) ? 0x80 : 0) + (Sum >> 1) + *pFcbName++;
+    }   
+  return (Sum);
 }
