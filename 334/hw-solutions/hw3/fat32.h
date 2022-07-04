@@ -8,7 +8,6 @@
 
 #define FAT_ENTRY_MASK 0x0fffffff
 
-#define FAT_ENTRY_RESERVED 0x0ffffff8
 #define FAT_ENTRY_BAD 0x0ffffff7
 #define FAT_ENTRY_EOC 0x0ffffff8
 
@@ -79,6 +78,7 @@ typedef struct struct_FatFile83 {
     uint16_t firstCluster;         // Last two bytes of the first cluster
     uint32_t fileSize;             // Filesize in bytes
     bool is_dir;                   // Whether entry is directory or not
+    char file_desc[22];      // File access rights as char array 
 } FatFile83;
 
 // The long filename information can be repeated as necessary before the original 8.3 filename entry

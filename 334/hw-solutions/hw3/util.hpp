@@ -5,7 +5,7 @@
 #include <vector>
 
 
-std::string utf16bytestostr(uint16_t *chars);
+std::string u16bytestostr(uint16_t *chars);
 
 /**
  * Converts the path 'p' into tokenized set of strings. p needs to be a path string, e.g. "/home/a/b/c.txt".

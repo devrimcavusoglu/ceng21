@@ -108,6 +108,15 @@ FatFileEntry read_dir_entry(int fd, int offset) {
 
 	fat_entry.msdos.is_dir = fat_entry.msdos.attributes & FAT_DIRENT_ISDIR ? true : false;
 
+	// ..., since the FAT32 filesystem does not support file permissions, 
+	// file ownership, and links, the beginning is fixed.
+	const char *access[] = {"-", "d"};
+	sprintf(
+		fat_entry.msdos.file_desc,
+		"%srwx------ 1 root root",
+		(fat_entry.msdos.is_dir ? access[1] : access[0])
+	);
+
 	return fat_entry;
 }
 

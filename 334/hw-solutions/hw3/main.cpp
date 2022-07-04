@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
 	bool input_marker = true;
 
 	while (true) {
-		// Used to prompt markers for inputs and bundle creation
+		// Used to prompt markers for inputs and CWD
 		if (input_marker) std::cout << fat32img.get_cwd().c_str() << "> ";
 
 		std::getline(std::cin >> std::ws, input);

@@ -1,10 +1,10 @@
 #include "util.hpp"
 
 
-std::string utf16bytestostr(uint16_t *chars) {
+std::string u16bytestostr(uint16_t *chars) {
     std::string strname;
     for (int i = 0; i <= sizeof(chars); i++) {
-        if (chars[i] == 0)
+        if (chars[i] == 0) // Char bytes termination
             break;
         strname += chars[i];
     }

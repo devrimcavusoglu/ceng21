@@ -18,8 +18,10 @@ namespace fs = std::filesystem;
 
 typedef struct struct_path {
 	fs::path path;
-	int cluster;
-	std::vector<int> pclusters;
+	uint32_t cluster;
+	std::vector<uint32_t> pclusters;
+	bool is_dir;
+	bool exists;
 } path_t;
 
 class Fat32Image {

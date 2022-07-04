@@ -17,6 +17,8 @@ Fat32Image::Fat32Image(char *path) {
 
 	this->root.path = "/"; 
 	this->root.cluster = BPB.extended.RootCluster;
+	this->root.is_dir = true;
+	this->root.exists = true;
 	this->cwd = this->root; // set CWD as root
 
 	printf(
@@ -95,37 +97,83 @@ fs::path Fat32Image::get_cwd() {
 
 void Fat32Image::change_directory(fs::path path) {
 	std::cout << "path: " << path << std::endl;
-	this->get_dir_entries(2);
-	// this->get_dir_entry(3);
-	// this->get_dir_entry(4);
-	// this->get_dir_entry(5);
-	// uint8_t buf[1024];
-	// this->read_cluster(root_dir.msdos.firstCluster, buf); // root
-	// printf("buf: %\n", buf);
+	path_t p = this->locate(path);
+	printf(
+		"path: %s\n"
+		"cluster: %d\n"
+		"parent cluster: %d\n"
+		"is_dir: %d\n"
+		"exists: %d\n",
+		p.path.c_str(),
+		p.cluster,
+		(p.pclusters.empty() ? -1 : p.pclusters.back()),
+		p.is_dir,
+		p.exists
+	);
+	if (!p.exists or !p.is_dir)
+		return;
+	this->cwd = p;
 }
 
 // Private members
 
 path_t Fat32Image::locate(fs::path path) {
-	path_t current_directory = this->cwd;
+	// ** incorrectly locates path -> folder2/folder2/folder3
 	std::vector<std::string> spath = tokenizeStringPath(path);
-
-	if (spath[0] == ".." and !current_directory.pclusters.empty()) {
-		current_directory.path = current_directory.path.parent_path();
-		current_directory.cluster = current_directory.pclusters.back();
-		current_directory.pclusters.pop_back();
+	path_t current_path = this->cwd;
+	if (!current_path.is_dir) {
+		current_path.path = current_path.path.parent_path();
+		current_path.cluster = current_path.pclusters.back();
+		current_path.pclusters.pop_back();
+		current_path.is_dir = true;
 	}
-	else 
-		current_directory = this->root;
 
-	while (this->fat_table[current_directory.cluster] != FAT_ENTRY_EOC) {
+	if (spath.front() == ".." and !current_path.pclusters.empty()) {
+		current_path.path = current_path.path.parent_path();
+		current_path.cluster = current_path.pclusters.back();
+		current_path.pclusters.pop_back();
+		spath.erase(spath.begin());
+	}
+	else if (spath.front() == "") { // absolute path
+		current_path = this->root;
+		if (spath.size() == 1) 
+			return current_path;
+		spath.erase(spath.begin());
+	}
 
+	int i = 0; // spath index
+	bool stop = spath.empty();
+	while (!stop) {
+		std::vector<FatFileEntry> dirents = this->get_dir_entries(current_path.cluster);
+		for (int j = 0; j < dirents.size(); j++) {
+			printf("i: %d | j: %d\n", i , j);
+			if (u16bytestostr(dirents[j].lfn.name) == spath[i]) { // found
+				current_path.exists = true;
+				current_path.path /= spath[i];
+				current_path.pclusters.push_back(current_path.cluster);
+				current_path.cluster = dirents[j].msdos.firstCluster;					
+				current_path.is_dir = dirents[j].msdos.is_dir;
+				if (i == spath.size() - 1)  // last entry
+					return current_path;
+				else // not last entry
+					i++;
+			}
+			else {
+				current_path.exists = false;
+			}
+		}
+		if (this->fat_table[current_path.cluster] == FAT_ENTRY_EOC)
+			stop = true;
+		else if (!current_path.exists) 
+			current_path.cluster = this->fat_table[current_path.cluster];			
 	}
 }
 
 
 std::vector<FatFileEntry> Fat32Image::get_dir_entries(int cluster_id) {
 	std::vector<FatFileEntry> entries;
+	if (cluster_id < 2)
+		return entries;
 	int fd = open(this->image_file.c_str(), O_RDONLY);
 	printf("--cluster #%d @ %u\n", cluster_id, cluster2byte(cluster_id));
 	bool cond = true;
@@ -143,7 +191,7 @@ std::vector<FatFileEntry> Fat32Image::get_dir_entries(int cluster_id) {
 	close(fd);
 	printf("len entries: %d\n", entries.size());
 	
-	// FatFileEntry entry = entries[0];
+	// FatFileEntry entry = entries[1];
 
 	// printf(
 	// 	"fname: %s.%s\n"
@@ -154,17 +202,23 @@ std::vector<FatFileEntry> Fat32Image::get_dir_entries(int cluster_id) {
 	// 	"fileSize: %u\n"
 	// 	"seq_is_last: %d\n"
 	// 	"seq-no: %d\n"
-	// 	"is dir?: %d\n",
+	// 	"is dir?: %d\n"
+	// 	"ea index: %04x\n"
+	// 	"first cluster: %04x\n"
+	// 	"file-access: %s\n",
 	// 	entry.msdos.filename,
 	// 	entry.msdos.extension,
-	// 	utf16bytestostr(entry.lfn.name).c_str(),
+	// 	u16bytestostr(entry.lfn.name).c_str(),
 	// 	entry.lfn.sequence_number,
 	// 	entry.lfn.checksum,
 	// 	entry.msdos.creationTimeMs,
 	// 	entry.msdos.fileSize,
 	// 	entry.lfn.seq_is_last,
 	// 	entry.lfn.seq_no,
-	// 	entry.msdos.is_dir
+	// 	entry.msdos.is_dir,
+	// 	entry.msdos.eaIndex,
+	// 	entry.msdos.firstCluster,
+	// 	entry.msdos.file_desc
 	// );
 
 	// uint8_t time_arr[3];
@@ -189,7 +243,7 @@ std::string Fat32Image::get_cluster(int cluster_id) {
 }
 
 int Fat32Image::cluster2byte(int cluster_id) {
-	return this->data_area_start + (cluster_id - 2) * this->BPB.SectorsPerCluster;
+	return this->data_area_start + (cluster_id - 2) * sector2byte(this->BPB.SectorsPerCluster);
 }
 
 int Fat32Image::sector2byte(int sector_id) {
