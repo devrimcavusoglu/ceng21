@@ -1,15 +1,22 @@
+#include "fat32.h"
 #include "util.hpp"
 
 
 std::string u16bytestostr(uint16_t *chars) {
     std::string strname;
-    for (int i = 0; i <= sizeof(chars); i++) {
+    if (chars[0] == FAT_DIRENT_DOT) 
+        return ".";
+    else if (chars[0] == FAT_DIRENT_DOTDOT)
+        return "..";
+    
+    for (size_t i = 0; i <= sizeof(chars); i++) {
         if (chars[i] == 0) // Char bytes termination
             break;
         strname += chars[i];
     }
     return strname;
 }
+
 
 
 std::vector<std::string> tokenizeStringPath(std::string p) {

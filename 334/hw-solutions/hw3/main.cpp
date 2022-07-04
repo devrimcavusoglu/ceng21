@@ -44,5 +44,17 @@ int main(int argc, char **argv) {
 		if (p->type == input_type::CD) {
 			fat32img.change_directory(arg1);
 		}
+		else if (p->type == input_type::LS) {
+			if (arg1 == "-l") {
+				if (arg2 == "")
+					arg2 = ".";
+				fat32img.list_directory(arg2, true);
+			}
+			else {
+				if (arg1 == "")
+					arg1 = ".";
+				fat32img.list_directory(arg1);
+			}
+		}
 	}
 }

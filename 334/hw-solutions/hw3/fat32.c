@@ -106,7 +106,16 @@ FatFileEntry read_dir_entry(int fd, int offset) {
 	read(fd, &fat_entry.msdos.firstCluster, 2);
 	read(fd, &fat_entry.msdos.fileSize, 4);
 
-	fat_entry.msdos.is_dir = fat_entry.msdos.attributes & FAT_DIRENT_ISDIR ? true : false;
+	if (fat_entry.lfn.sequence_number == FAT_DIRENT_DOT) {
+		if (fat_entry.lfn.name1[0] == FAT_DIRENT_DOT) 
+			fat_entry.msdos.is_dir = 2;
+		else
+			fat_entry.msdos.is_dir = 3;
+	}
+	else 
+		fat_entry.msdos.is_dir = fat_entry.msdos.attributes & FAT_DIRENT_ISDIR ? 1 : 0;
+
+	u16strdatetime(fat_entry.msdos.modifiedDate, fat_entry.msdos.modifiedTime, fat_entry.msdos.datetime_str);
 
 	// ..., since the FAT32 filesystem does not support file permissions, 
 	// file ownership, and links, the beginning is fixed.
@@ -114,23 +123,9 @@ FatFileEntry read_dir_entry(int fd, int offset) {
 	sprintf(
 		fat_entry.msdos.file_desc,
 		"%srwx------ 1 root root",
-		(fat_entry.msdos.is_dir ? access[1] : access[0])
-	);
+		(fat_entry.msdos.is_dir ? access[1] : access[0]));
 
 	return fat_entry;
-}
-
-void xread(int fd, void *ptr, unsigned int bytes) {
-	int offset = lseek(fd, 0, SEEK_CUR);
-	int rc = read(fd, ptr, bytes);
-	printf(
-		"read %u (%u) bytes.. %u/%u\n", 
-		rc,
-		bytes, 
-		offset,
-		lseek(fd, 0, SEEK_CUR)
-	);
-	// lseek(fd, offset+bytes, SEEK_SET);
 }
 
 
@@ -140,20 +135,66 @@ void read_data(int fd, int offset, void *buf, unsigned int size) {
 }
 
 
-void ustrtime(uint16_t time, uint8_t *time_array) {
-	time_array[0] = time & FAT_FILE_TIME_HOUR_MASK;
-	time_array[1] = time & FAT_FILE_TIME_MINUTE_MASK;
-	time_array[2] = time & FAT_FILE_TIME_SECOND_MASK;
-	time_array[2] *= 2;
-	// https://wiki.osdev.org/FAT#Directories_on_FAT12.2F16.2F32
+void u16strdatetime(uint16_t date, uint16_t time, char *buffer) {
+    uint8_t month, day, hour, min;
+    char month_str[9];
+
+    month = (date >> 5) & FAT_FILE_DATE_MONTH_MASK;
+    get_month(month, month_str);
+    day = date & FAT_FILE_DATE_DAY_MASK;
+
+    hour = (time >> 11) & FAT_FILE_TIME_HOUR_MASK;
+    min = (time >> 5) & FAT_FILE_TIME_MINUTE_MASK;
+
+    sprintf(
+			buffer,
+			"%s %02d %02d:%02d",
+			month_str,
+			day,
+			hour,
+			min);
 }
 
 
-void ustrdate(uint16_t date, uint8_t *date_array) {
-	date_array[0] = date & FAT_FILE_DATE_YEAR_MASK;
-	date_array[1] = date & FAT_FILE_DATE_MONTH_MASK;
-	date_array[2] = date & FAT_FILE_DATE_DAY_MASK;
-	date_array[0] += 1970;
+void get_month(uint8_t month, char *buffer) {
+    switch(month) {
+        case 1:
+            strcpy(buffer, "January");
+            break;
+        case 2:
+            strcpy(buffer, "February");
+            break;
+        case 3:
+            strcpy(buffer, "March");
+            break;
+        case 4:
+            strcpy(buffer, "April");
+            break;
+        case 5:
+            strcpy(buffer, "May");
+            break;
+        case 6:
+            strcpy(buffer, "June");
+            break;
+        case 7:
+            strcpy(buffer, "July");
+            break;
+        case 8:
+            strcpy(buffer, "August");
+            break;
+        case 9:
+            strcpy(buffer, "September");
+            break;
+        case 10:
+            strcpy(buffer, "October");
+            break;
+        case 11:
+            strcpy(buffer, "November");
+            break;
+        case 12:
+            strcpy(buffer, "December");
+            break;
+    }
 }
 
 

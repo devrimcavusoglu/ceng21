@@ -16,14 +16,16 @@
 #define FAT_DIRENT_SEQNO_MASK 0xf
 #define FAT_DIRENT_SEQLAST_MASK 0xf0
 #define FAT_DIRENT_ISDIR 0x10
+#define FAT_DIRENT_DOT 0x20
+#define FAT_DIRENT_DOTDOT 0x2e
 
 #define FAT_FILE_TIME_HOUR_MASK 0x1f
-#define FAT_FILE_TIME_MINUTE_MASK 0x7e0
-#define FAT_FILE_TIME_SECOND_MASK 0xf800
+#define FAT_FILE_TIME_MINUTE_MASK 0x3f
+#define FAT_FILE_TIME_SECOND_MASK 0x1f
 
 #define FAT_FILE_DATE_YEAR_MASK 0x7f
-#define FAT_FILE_DATE_MONTH_MASK 0x780
-#define FAT_FILE_DATE_DAY_MASK 0xf800
+#define FAT_FILE_DATE_MONTH_MASK 0xf
+#define FAT_FILE_DATE_DAY_MASK 0x1f
 
 
 #pragma pack(push, 1)
@@ -77,8 +79,9 @@ typedef struct struct_FatFile83 {
     uint16_t modifiedDate;         // Modification date with Y:M:D format
     uint16_t firstCluster;         // Last two bytes of the first cluster
     uint32_t fileSize;             // Filesize in bytes
-    bool is_dir;                   // Whether entry is directory or not
-    char file_desc[22];      // File access rights as char array 
+    uint8_t is_dir;                // Whether entry is directory or not
+    char file_desc[22];            // File access rights as char array    
+    char datetime_str[18];         // Date-time as string 
 } FatFile83;
 
 // The long filename information can be repeated as necessary before the original 8.3 filename entry
@@ -101,13 +104,12 @@ typedef struct struct_FatFileEntry {
     FatFileLFN lfn;
 } FatFileEntry;
 
-void xread(int fd, void *ptr, unsigned int bytes);
 
 void read_fat_table(int fd, int start, int end, uint32_t *fat_table);
 
-void ustrtime(uint16_t time, uint8_t *time_array);
+void u16strdatetime(uint16_t date, uint16_t time, char *buffer);
 
-void ustrdate(uint16_t date, uint8_t *date_array);
+void get_month(uint8_t month, char *buffer);
 
 void read_bpb(int fd, BPB_struct &bpb);
 

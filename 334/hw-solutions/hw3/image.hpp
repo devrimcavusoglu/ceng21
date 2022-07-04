@@ -34,6 +34,9 @@ public:
 	// cd into given path. Returns true if valid, false otherwise.
 	void change_directory(fs::path path);
 
+	// list directory content
+	void list_directory(fs::path path, bool verbose = false);
+
 private:
 	path_t locate(fs::path path);
 
