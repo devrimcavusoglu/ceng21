@@ -6,7 +6,7 @@ std::string u16bytestostr(uint16_t *chars) {
     std::string strname;
     if (chars[0] == FAT_DIRENT_DOT) 
         return ".";
-    else if (chars[0] == FAT_DIRENT_DOTDOT)
+    else if (chars[1] == FAT_DIRENT_DOT)
         return "..";
     
     for (size_t i = 0; i <= sizeof(chars); i++) {

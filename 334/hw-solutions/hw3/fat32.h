@@ -2,6 +2,7 @@
 #define HW3_FAT32_H
 
 #include <stdint.h>
+#include <stdlib.h>
 
 // Bytes per sector is fixed at 512 in this homework.
 #define BPS 512
@@ -11,13 +12,16 @@
 #define FAT_ENTRY_BAD 0x0ffffff7
 #define FAT_ENTRY_EOC 0x0ffffff8
 
+// Assuming all dirents 64 bytes (1 LFN + FAT32) 
+// This assumption will fail for entries where `# of LFN entries > 1`
+#define FAT_DIRENT_PER_CLUSTER 1024/64  
+
 #define FAT_DIRENT_DELETED 0xe5
 #define FAT_DIRENT_SEQLAST 0x40
 #define FAT_DIRENT_SEQNO_MASK 0xf
 #define FAT_DIRENT_SEQLAST_MASK 0xf0
 #define FAT_DIRENT_ISDIR 0x10
-#define FAT_DIRENT_DOT 0x20
-#define FAT_DIRENT_DOTDOT 0x2e
+#define FAT_DIRENT_DOT 0x2e
 
 #define FAT_FILE_TIME_HOUR_MASK 0x1f
 #define FAT_FILE_TIME_MINUTE_MASK 0x3f
@@ -81,8 +85,7 @@ typedef struct struct_FatFile83 {
     uint32_t fileSize;             // Filesize in bytes
     uint8_t is_dir;                // 0: file 1: dir 2: dot-dir 3: dotdot-dir
     char file_desc[22];            // File access rights as char array    
-    char datetime_str[13];         // Date-time as string 
-    uint32_t cluster_id;          // cluster id as 32 bit uint concat of eaIndex and firstCluster
+    char datetime_str[13];         // Date-time as string
 } FatFile83;
 
 // The long filename information can be repeated as necessary before the original 8.3 filename entry
@@ -118,10 +121,11 @@ uint32_t read_fat_entry(int fd, int offset);
 
 FatFileEntry read_dir_entry(int fd, int offset);
 
+void write_fat_entry(int fd, int offset, FatFileEntry &fat_entry);
+
 void read_data(int fd, int offset, void *buf, unsigned int size);
 
 unsigned char cksum(unsigned char *pFcbName);
-
 
 #pragma pack(pop)
 

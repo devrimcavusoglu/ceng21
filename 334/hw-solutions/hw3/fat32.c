@@ -106,13 +106,11 @@ FatFileEntry read_dir_entry(int fd, int offset) {
 	read(fd, &fat_entry.msdos.firstCluster, 2);
 	read(fd, &fat_entry.msdos.fileSize, 4);
 
-	fat_entry.msdos.cluster_id = (fat_entry.msdos.eaIndex << 16 ) | fat_entry.msdos.firstCluster;
-
-	if (fat_entry.lfn.sequence_number == FAT_DIRENT_DOT) {
-		if (fat_entry.lfn.name1[0] == FAT_DIRENT_DOT) 
-			fat_entry.msdos.is_dir = 2;
-		else
+	if (fat_entry.msdos.filename[0] == FAT_DIRENT_DOT) {
+		if (fat_entry.msdos.filename[1] == FAT_DIRENT_DOT) 
 			fat_entry.msdos.is_dir = 3;
+		else
+			fat_entry.msdos.is_dir = 2;
 	}
 	else 
 		fat_entry.msdos.is_dir = fat_entry.msdos.attributes & FAT_DIRENT_ISDIR ? 1 : 0;
@@ -128,6 +126,11 @@ FatFileEntry read_dir_entry(int fd, int offset) {
 		(fat_entry.msdos.is_dir ? access[1] : access[0]));
 
 	return fat_entry;
+}
+
+
+void write_fat_entry(int fd, int offset, FatFileEntry &fat_entry) {
+	
 }
 
 
@@ -182,19 +185,19 @@ void get_month(uint8_t month, char *buffer) {
             strcpy(buffer, " Jul");
             break;
         case 8:
-            strcpy(buffer, "Aug");
+            strcpy(buffer, " Aug");
             break;
         case 9:
-            strcpy(buffer, "Sep");
+            strcpy(buffer, " Sep");
             break;
         case 10:
-            strcpy(buffer, "Oct");
+            strcpy(buffer, " Oct");
             break;
         case 11:
-            strcpy(buffer, "Nov");
+            strcpy(buffer, " Nov");
             break;
         case 12:
-            strcpy(buffer, "Dec");
+            strcpy(buffer, " Dec");
             break;
     }
 }

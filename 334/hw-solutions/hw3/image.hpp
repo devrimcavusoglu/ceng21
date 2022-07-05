@@ -11,8 +11,11 @@
 #include <vector>
 
 #include "fat32.h"
+#include "util.hpp"
 
 
+// std::fs is used only for path string management 
+// (fs::path object only)
 namespace fs = std::filesystem;
 
 
@@ -40,6 +43,8 @@ public:
 
 	void cat_file(fs::path path);
 
+	void touch(fs::path path);
+
 private:
 	path_t locate(fs::path path);
 
@@ -48,6 +53,8 @@ private:
 
 	// Returns the raw content of cluster as string.
 	std::string get_cluster(int cluster_id);
+
+	uint32_t next_free_cluster();
 
 	int cluster2sector(int cluster_id);
 	
