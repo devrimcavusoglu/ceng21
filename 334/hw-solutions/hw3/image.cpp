@@ -109,7 +109,7 @@ void Fat32Image::change_directory(fs::path path) {
 		p.is_dir,
 		p.exists
 	);
-	if (!p.exists or !p.is_dir)
+	if (!p.exists or !p.is_dir) // Sanity check
 		return;
 	this->cwd = p;
 }
@@ -117,7 +117,7 @@ void Fat32Image::change_directory(fs::path path) {
 
 void Fat32Image::list_directory(fs::path path, bool verbose) {
 	path_t p = this->locate(path);
-	if (!p.exists or !p.is_dir)
+	if (!p.exists or !p.is_dir)	// Sanity check
 		return;
 
 	std::vector<FatFileEntry> dirents;
@@ -134,11 +134,17 @@ void Fat32Image::list_directory(fs::path path, bool verbose) {
 			for (size_t i = 0; i < dirents.size(); i++) {
 				if (dirents[i].msdos.is_dir > 1)
 					continue;
-				printf("%s %u '%s' %s\n",
+				printf("%s % 9u %s %s\n",
 					dirents[i].msdos.file_desc,
 					dirents[i].msdos.fileSize,
-				 	dirents[i].msdos.datetime_str,
+				 	&(dirents[i].msdos.datetime_str[1]), // no idea, but buffer mysteriously puts null term. as first char, this is a work-around fix. (#L143)
 					u16bytestostr(dirents[i].lfn.name).c_str());
+
+				// for debugging - datetime-str
+				// for (int j = 0; j < sizeof(dirents[i].msdos.datetime_str); j++)
+				// 	printf("%u ", dirents[i].msdos.datetime_str[j]);
+				// puts("");
+
 			}
 		}
 
@@ -149,18 +155,24 @@ void Fat32Image::list_directory(fs::path path, bool verbose) {
 	}
 }
 
+
+void Fat32Image::cat_file(fs::path path) {
+	path_t p = this->locate(path);
+	if (!p.exists or p.is_dir)	// Sanity check
+		return;
+
+	while (p.cluster != FAT_ENTRY_EOC and p.cluster != FAT_ENTRY_BAD) {
+		std::cout << get_cluster(p.cluster);
+		p.cluster = this->fat_table[p.cluster];
+	}
+}
+
 // Private members
 
 path_t Fat32Image::locate(fs::path path) {
 	// ** incorrectly locates path -> folder2/folder2/folder3
 	std::vector<std::string> spath = tokenizeStringPath(path);
 	path_t current_path = this->cwd;
-	if (!current_path.is_dir) {
-		current_path.path = current_path.path.parent_path();
-		current_path.cluster = current_path.pclusters.back();
-		current_path.pclusters.pop_back();
-		current_path.is_dir = true;
-	}
 
 	if (spath.front() == ".") {
 		spath.erase(spath.begin());
@@ -183,28 +195,36 @@ path_t Fat32Image::locate(fs::path path) {
 	std::vector<FatFileEntry> dirents;
 	while (true) {
 		dirents = this->get_dir_entries(current_path.cluster);
+		current_path.exists = false;
 		for (size_t j = 0; j < dirents.size(); j++) {
-			if (u16bytestostr(dirents[j].lfn.name) == spath[i]) { // found
-				current_path.exists = true;
-				current_path.path /= spath[i];
-				current_path.pclusters.push_back(current_path.cluster);
-				current_path.cluster = dirents[j].msdos.firstCluster;					
-				current_path.is_dir = dirents[j].msdos.is_dir;
-				if (i == spath.size() - 1)  // last entry
-					return current_path;
-				else // not last entry
-					i++;
+			if (u16bytestostr(dirents[j].lfn.name) != spath[i]) // not found
+				continue; 
+			current_path.exists = true;
+			current_path.path /= spath[i];
+			current_path.pclusters.push_back(current_path.cluster);
+			// current_path.cluster = dirents[j].msdos.cluster_id;
+			current_path.cluster = dirents[j].msdos.firstCluster;
+			// printf("-- p: %s | cluster_id -> %u | LSB -> %u\n ",
+			// 	current_path.path.c_str(), 
+			// 	// dirents[j].msdos.cluster_id,
+			// 	dirents[j].msdos.firstCluster
+			// 	);
+			current_path.is_dir = dirents[j].msdos.is_dir;
+			if (i++ == spath.size() - 1) { // last entry
+				// printf("I'm here... p: %s\n", current_path.path);
+				return current_path;
 			}
-			else {
-				current_path.exists = false;
-			}
+			break; // no need to traverse further, found!
 		}
-		if (this->fat_table[current_path.cluster] == FAT_ENTRY_EOC or this->fat_table[current_path.cluster] == FAT_ENTRY_BAD)
-			break;
-		else if (!current_path.exists) 
-			current_path.cluster = this->fat_table[current_path.cluster];			
+
+		if (!current_path.exists) {
+			if (this->fat_table[current_path.cluster] == FAT_ENTRY_EOC or this->fat_table[current_path.cluster] == FAT_ENTRY_BAD)
+				break;
+			current_path.cluster = this->fat_table[current_path.cluster];
+		}
 	}
-	return current_path;
+
+	return current_path;  // iff path not exists
 }
 
 

@@ -24,6 +24,7 @@ typedef struct struct_path {
 	bool exists;
 } path_t;
 
+
 class Fat32Image {
 public:
 	// reads the image from given path and parses the image.
@@ -36,6 +37,8 @@ public:
 
 	// list directory content
 	void list_directory(fs::path path, bool verbose = false);
+
+	void cat_file(fs::path path);
 
 private:
 	path_t locate(fs::path path);

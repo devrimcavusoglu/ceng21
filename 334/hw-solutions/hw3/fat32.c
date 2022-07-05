@@ -106,6 +106,8 @@ FatFileEntry read_dir_entry(int fd, int offset) {
 	read(fd, &fat_entry.msdos.firstCluster, 2);
 	read(fd, &fat_entry.msdos.fileSize, 4);
 
+	fat_entry.msdos.cluster_id = (fat_entry.msdos.eaIndex << 16 ) | fat_entry.msdos.firstCluster;
+
 	if (fat_entry.lfn.sequence_number == FAT_DIRENT_DOT) {
 		if (fat_entry.lfn.name1[0] == FAT_DIRENT_DOT) 
 			fat_entry.msdos.is_dir = 2;
@@ -137,7 +139,7 @@ void read_data(int fd, int offset, void *buf, unsigned int size) {
 
 void u16strdatetime(uint16_t date, uint16_t time, char *buffer) {
     uint8_t month, day, hour, min;
-    char month_str[9];
+    char month_str[4];
 
     month = (date >> 5) & FAT_FILE_DATE_MONTH_MASK;
     get_month(month, month_str);
@@ -148,51 +150,51 @@ void u16strdatetime(uint16_t date, uint16_t time, char *buffer) {
 
     sprintf(
 			buffer,
-			"%s %02d %02d:%02d",
+			"%s %02u %02u:%02u",
 			month_str,
 			day,
 			hour,
-			min);
+			min);   	
 }
 
 
 void get_month(uint8_t month, char *buffer) {
     switch(month) {
         case 1:
-            strcpy(buffer, "January");
+            strcpy(buffer, " Jan");
             break;
         case 2:
-            strcpy(buffer, "February");
+            strcpy(buffer, " Feb");
             break;
         case 3:
-            strcpy(buffer, "March");
+            strcpy(buffer, " Mar");
             break;
         case 4:
-            strcpy(buffer, "April");
+            strcpy(buffer, " Apr");
             break;
         case 5:
-            strcpy(buffer, "May");
+            strcpy(buffer, " May");
             break;
         case 6:
-            strcpy(buffer, "June");
+            strcpy(buffer, " Jun");
             break;
         case 7:
-            strcpy(buffer, "July");
+            strcpy(buffer, " Jul");
             break;
         case 8:
-            strcpy(buffer, "August");
+            strcpy(buffer, "Aug");
             break;
         case 9:
-            strcpy(buffer, "September");
+            strcpy(buffer, "Sep");
             break;
         case 10:
-            strcpy(buffer, "October");
+            strcpy(buffer, "Oct");
             break;
         case 11:
-            strcpy(buffer, "November");
+            strcpy(buffer, "Nov");
             break;
         case 12:
-            strcpy(buffer, "December");
+            strcpy(buffer, "Dec");
             break;
     }
 }

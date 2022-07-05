@@ -79,9 +79,10 @@ typedef struct struct_FatFile83 {
     uint16_t modifiedDate;         // Modification date with Y:M:D format
     uint16_t firstCluster;         // Last two bytes of the first cluster
     uint32_t fileSize;             // Filesize in bytes
-    uint8_t is_dir;                // Whether entry is directory or not
+    uint8_t is_dir;                // 0: file 1: dir 2: dot-dir 3: dotdot-dir
     char file_desc[22];            // File access rights as char array    
-    char datetime_str[18];         // Date-time as string 
+    char datetime_str[13];         // Date-time as string 
+    uint32_t cluster_id;          // cluster id as 32 bit uint concat of eaIndex and firstCluster
 } FatFile83;
 
 // The long filename information can be repeated as necessary before the original 8.3 filename entry

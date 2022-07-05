@@ -41,20 +41,30 @@ int main(int argc, char **argv) {
 		std::string arg1 = (p->arg1) ? p->arg1 : "";
 		std::string arg2 = (p->arg2) ? p->arg2 : "";
 
-		if (p->type == input_type::CD) {
-			fat32img.change_directory(arg1);
-		}
-		else if (p->type == input_type::LS) {
-			if (arg1 == "-l") {
-				if (arg2 == "")
-					arg2 = ".";
-				fat32img.list_directory(arg2, true);
-			}
-			else {
-				if (arg1 == "")
-					arg1 = ".";
-				fat32img.list_directory(arg1);
-			}
+		switch(p->type) {
+			case input_type::CD:	// Change directory
+				if (arg1 != "")
+					fat32img.change_directory(arg1);
+				break;
+
+			case input_type::LS:	// List directory
+				if (arg1 == "-l") {
+					if (arg2 == "")
+						arg2 = ".";
+					fat32img.list_directory(arg2, true);
+				}
+				else {
+					if (arg1 == "")
+						arg1 = ".";
+					fat32img.list_directory(arg1);
+				}
+				break;
+
+			case input_type::CAT:	// Concat & print file content
+				if (arg1 != "")
+					fat32img.cat_file(arg1);
+				break;
+			
 		}
 	}
 }
