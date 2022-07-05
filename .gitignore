@@ -39,6 +39,7 @@
 CMakeLists.txt
 *.txt
 test
+*.img
 
 __pycache__/
 *.pyc
