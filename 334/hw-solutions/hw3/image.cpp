@@ -20,68 +20,6 @@ Fat32Image::Fat32Image(char *path) {
 	this->root.exists = true;
 	this->cwd = this->root; // set CWD as root
 
-	printf(
-		"BPB Information:\n"
-		"	BS_JumpBoot: %p\n"
-		"	BS_OEMName: %s\n"
-		"	BPS: %d\n"
-		"	SPC: %d\n"
-		"	ReservedSectorCount: %d\n"
-		"	NumFATs: %d\n"
-		"	RootEntryCount: %d (should be 0)\n"
-		"	TotalSectors16: %d (should be 0)\n"
-		"	Media: %p\n"
-		"	FATSize16: %d (should be 0)\n"
-		"	SectorsPerTrack: %d\n"
-		"	NumberOfHeads: %d\n"
-		"	HiddenSectors: %d\n"
-		"	TotalSectors32: %d\n",
-		BPB.BS_JumpBoot,
-		BPB.BS_OEMName,
-		BPB.BytesPerSector,
-		BPB.SectorsPerCluster,
-		BPB.ReservedSectorCount,
-		BPB.NumFATs,
-		BPB.RootEntryCount,
-		BPB.TotalSectors16,
-		BPB.Media,
-		BPB.FATSize16,
-		BPB.SectorsPerTrack,
-		BPB.NumberOfHeads,
-		BPB.HiddenSectors,
-		BPB.TotalSectors32
-	);
-	printf(
-		"=====================Extended Params=====================\n"
-		"	FATSize: %d\n"
-		"	ExtFlags: %d\n"
-		"	FSVersion: %d\n"
-		"	RootCluster: %d\n"
-		"	FSInfo: %d\n"
-		"	BkBootSec: %d\n"
-		"	BS_DriveNumber: %d\n"
-		"	BS_Reserved1: %d\n"
-		"	BS_BootSig: %d\n"
-		"	BS_VolumeID: %u\n"
-		"	BS_VolumeLabel: %s\n"
-		"	BS_FileSystemType: %s\n"
-		"========================================================\n",
-		BPB.extended.FATSize,
-		BPB.extended.ExtFlags,
-		BPB.extended.FSVersion,
-		BPB.extended.RootCluster,
-		BPB.extended.FSInfo,
-		BPB.extended.BkBootSec,
-		BPB.extended.BS_DriveNumber,
-		BPB.extended.BS_Reserved1,
-		BPB.extended.BS_BootSig,
-		BPB.extended.BS_VolumeID,
-		BPB.extended.BS_VolumeLabel,
-		BPB.extended.BS_FileSystemType
-	);
-	printf("fat entry offset: %d\n", this->fat_entry_offset);
-	printf("data area offset: %d\n", this->data_area_start);
-	printf("bytes per cluster: %d\n", this->bytes_per_cluster);
 	uint32_t fat_table_temp[sector2byte(BPB.extended.FATSize)/4];
 	read_fat_table(fd, fat_entry_offset, fat_entry_offset + sector2byte(BPB.extended.FATSize), fat_table_temp);
 	this->fat_table = fat_table_temp;
@@ -96,18 +34,7 @@ fs::path Fat32Image::get_cwd() {
 
 void Fat32Image::change_directory(fs::path path) {
 	path_t p = this->locate(path);
-	// printf(
-	// 	"path: %s\n"
-	// 	"cluster: %d\n"
-	// 	"parent cluster: %d\n"
-	// 	"is_dir: %hu\n"
-	// 	"exists: %d\n",
-	// 	p.path.c_str(),
-	// 	p.cluster,
-	// 	(p.pclusters.empty() ? -1 : p.pclusters.back()),
-	// 	p.is_dir,
-	// 	p.exists
-	// );
+
 	if (!p.exists or !p.is_dir) // Sanity check
 		return;
 	this->cwd = p;
@@ -169,21 +96,45 @@ void Fat32Image::cat_file(fs::path path) {
 
 void Fat32Image::touch(fs::path path) {
 	std::string filename = path.filename();
-	path_t p = this->locate(path.parent_path());
+	if (path.has_parent_path())
+		path = path.parent_path();
+	else
+		path = "/";
+
+	path_t p = this->locate(path);
 	if (!p.exists or !p.is_dir)  // Sanity check
 		return;
 
 	uint32_t cluster_id = p.cluster;
-	FatFileEntry file_entry;
+	FatFileEntry fat_entry;
 	std::vector<FatFileEntry> dirents = this->get_dir_entries(cluster_id);
+	uint32_t cur_offset = cluster2byte(cluster_id) + dirents.size() * 64;
 	while (true) {
 		if (dirents.size()*64 > (this->bytes_per_cluster - 64)) {
 			cluster_id = this->fat_table[cluster_id];
 			if (cluster_id == FAT_ENTRY_EOC or cluster_id == FAT_ENTRY_BAD)
-				break;
+				return;
+			dirents = this->get_dir_entries(cluster_id);
+			cur_offset = cluster2byte(cluster_id) + dirents.size() * 64;
 			continue;
 		}
+		break;		
 	}
+	
+	fat_entry.lfn.sequence_number = 0x41;
+	strtou16bytes(filename, fat_entry.lfn.name1, 5);
+	fat_entry.lfn.attributes = 0x0f;
+	fat_entry.lfn.reserved = 0x00;
+	fat_entry.lfn.checksum = cksum((unsigned char*)filename.c_str());
+	if (filename.size() > 5)
+		strtou16bytes(filename.substr(5), fat_entry.lfn.name2, 6);
+	fat_entry.lfn.firstCluster = 0x0000;
+	if (filename.size() > 11)
+		strtou16bytes(filename.substr(11), fat_entry.lfn.name3, 2);
+
+
+
+	write_fat_entry(cur_offset, fat_entry);
 }
 
 
@@ -262,6 +213,29 @@ std::vector<FatFileEntry> Fat32Image::get_dir_entries(int cluster_id) {
 	}
 	close(fd);
 	return entries;
+}
+
+
+void Fat32Image::write_fat_entry(int offset, FatFileEntry fat_entry) {
+	std::ofstream s(this->image_file, std::ios_base::binary | std::ios_base::out | std::ios_base::in);
+	s.seekp(offset, std::ios_base::beg);
+
+	char name1[10];
+	char name2[12];
+	char name3[4];
+
+
+	// lfn 
+	s.write((char*)&fat_entry.lfn.sequence_number, 1);
+	s.write(name1, 10);
+	s.write((char*)&fat_entry.lfn.attributes, 1);
+	s.write((char*)&fat_entry.lfn.reserved, 1);
+	s.write((char*)&fat_entry.lfn.checksum, 1);
+	s.write(name2, 12);
+	s.write((char*)&fat_entry.lfn.firstCluster, 2);
+	s.write(name3, 4);
+	
+	// msdos
 }
 
 

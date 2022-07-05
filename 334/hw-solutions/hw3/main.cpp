@@ -14,7 +14,6 @@ int main(int argc, char **argv) {
 		std::cerr << "Provide only a single argument path.\n"; exit(-1);
 	}
 	char *image_file = argv[1];
-	printf("image_file: %s\n", image_file);
 	Fat32Image fat32img(image_file);
 
 	parsed_input *p = new parsed_input;
@@ -65,6 +64,10 @@ int main(int argc, char **argv) {
 					fat32img.cat_file(arg1);
 				break;
 			
+			case input_type::TOUCH:
+				if (arg1 != "")
+					fat32img.touch(arg1);
+				break;
 		}
 	}
 }

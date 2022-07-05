@@ -121,8 +121,6 @@ uint32_t read_fat_entry(int fd, int offset);
 
 FatFileEntry read_dir_entry(int fd, int offset);
 
-void write_fat_entry(int fd, int offset, FatFileEntry &fat_entry);
-
 void read_data(int fd, int offset, void *buf, unsigned int size);
 
 unsigned char cksum(unsigned char *pFcbName);

@@ -18,6 +18,25 @@ std::string u16bytestostr(uint16_t *chars) {
 }
 
 
+void strtou16bytes(std::string str, uint16_t *buffer, int n) {
+    const char *c_str = str.c_str();
+
+    for (size_t i = 0; i < n; i++) {
+        buffer[i] = c_str[i];
+    }
+}
+
+
+void correct_u16bytes(const char *src, char *dest) {
+    for (int i = sizeof(dest)-1; i >= 0; i--) {
+        if (i%2 != 0) {
+            dest[i] = 0;
+            continue;
+        }
+        dest[i] = src[i/2];
+    }
+}
+
 std::vector<std::string> tokenizeStringPath(std::string p) {
     /**
      * Converts the path 'p' into tokenized set of strings. p needs to be a path string, e.g. "/home/a/b/c.txt".

@@ -3,7 +3,9 @@
 
 #include <filesystem>
 #include <fcntl.h>
+#include <fstream>
 #include <iostream>
+#include <ios>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -61,6 +63,8 @@ private:
 	int sector2byte(int sector_id);
 
 	int cluster2byte(int cluster_id);
+
+	void write_fat_entry(int offset, FatFileEntry fat_entry);
 
 	// attributes
 	fs::path image_file; // file path

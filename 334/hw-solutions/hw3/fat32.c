@@ -8,15 +8,7 @@
 
 void read_fat_table(int fd, int start, int end, uint32_t *fat_table) {
 	int total_entries = (end - start) / 4;
-	printf("total entries: %d | start: %d | end: %d | current offset: %u\n", 
-		total_entries, 
-		start,
-		end,
-		lseek(fd, 0, SEEK_CUR));
 	lseek(fd, start, SEEK_SET);
-	printf("total entries: %d | current offset: %u\n", 
-		total_entries, 
-		lseek(fd, 0, SEEK_CUR));
 	read(fd, fat_table, end - start);
 }
 
