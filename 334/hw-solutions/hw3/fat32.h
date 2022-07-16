@@ -83,9 +83,6 @@ typedef struct struct_FatFile83 {
     uint16_t modifiedDate;         // Modification date with Y:M:D format
     uint16_t firstCluster;         // Last two bytes of the first cluster
     uint32_t fileSize;             // Filesize in bytes
-    uint8_t is_dir;                // 0: file 1: dir 2: dot-dir 3: dotdot-dir
-    char file_desc[22];            // File access rights as char array    
-    char datetime_str[13];         // Date-time as string
 } FatFile83;
 
 // The long filename information can be repeated as necessary before the original 8.3 filename entry
@@ -98,14 +95,20 @@ typedef struct struct_FatFileLFN {
     uint16_t name2[6];      // 6 More chars of name (UTF-16 format)
     uint16_t firstCluster;  // Always 0x0000
     uint16_t name3[2];      // 2 More chars of name (UTF-16 format)
-    uint16_t name[13];      // name1 + name2 + name3
-    bool seq_is_last;       // Whether entry is last LFN sequence or not
-    uint8_t seq_no;         // LFN sequence number
 } FatFileLFN;
+
+#pragma pack(pop)
 
 typedef struct struct_FatFileEntry {
     FatFile83 msdos;
     FatFileLFN lfn;
+    uint8_t state;                 // 0: free 1: used 2: erased
+    uint8_t is_dir;                // 0: file 1: dir 2: dot-dir 3: dotdot-dir
+    char file_desc[22];            // File access rights as char array    
+    char datetime_str[13];         // Date-time as string
+    uint16_t name[14];             // name1 + name2 + name3
+    bool seq_is_last;              // Whether entry is last LFN sequence or not
+    uint8_t seq_no;                // LFN sequence number
 } FatFileEntry;
 
 
@@ -115,8 +118,6 @@ void u16strdatetime(uint16_t date, uint16_t time, char *buffer);
 
 void get_month(uint8_t month, char *buffer);
 
-void read_bpb(int fd, BPB_struct &bpb);
-
 uint32_t read_fat_entry(int fd, int offset);
 
 FatFileEntry read_dir_entry(int fd, int offset);
@@ -124,7 +125,5 @@ FatFileEntry read_dir_entry(int fd, int offset);
 void read_data(int fd, int offset, void *buf, unsigned int size);
 
 unsigned char cksum(unsigned char *pFcbName);
-
-#pragma pack(pop)
 
 #endif //HW3_FAT32_H

@@ -2,17 +2,18 @@
 #include "util.hpp"
 
 
-std::string u16bytestostr(uint16_t *chars) {
+std::string u16bytestostr(uint16_t *chars, int start) {
     std::string strname;
     if (chars[0] == FAT_DIRENT_DOT) 
-        return ".";
+        strname = ".";
     else if (chars[1] == FAT_DIRENT_DOT)
-        return "..";
-    
-    for (size_t i = 0; i <= sizeof(chars); i++) {
-        if (chars[i] == 0) // Char bytes termination
-            break;
-        strname += chars[i];
+        strname = "..";
+    else {
+        for (size_t i = start; i <= sizeof(chars); i++) {
+            if (chars[i] == 0) // Char bytes termination
+                break;
+            strname += chars[i];
+        }
     }
     return strname;
 }

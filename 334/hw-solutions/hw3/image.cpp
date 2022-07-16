@@ -8,7 +8,7 @@ namespace fs = std::filesystem;
 Fat32Image::Fat32Image(char *path) {
 	this->image_file = path;
 	int fd = open(this->image_file.c_str(), O_RDONLY);
-	read_bpb(fd, this->BPB);
+	read(fd, &this->BPB, sizeof(this->BPB));
 
 	this->fat_entry_offset = BPB.ReservedSectorCount * BPB.BytesPerSector;
 	this->bytes_per_cluster = BPB.BytesPerSector * BPB.SectorsPerCluster;
@@ -50,29 +50,24 @@ void Fat32Image::list_directory(fs::path path, bool verbose) {
 	while (true) {
 		dirents = this->get_dir_entries(p.cluster);
 
-		if (!verbose) {
-			for (size_t i = 0; i < dirents.size(); i++) {
-				printf("%s ", u16bytestostr(dirents[i].lfn.name).c_str());
+		for (size_t i = 0; i < dirents.size(); i++) {
+			if (dirents[i].state != 1 or dirents[i].is_dir > 1)	// filter out erased or dot entries
+				continue;
+			if (!verbose) {
+				printf("%s ", u16bytestostr(dirents[i].name).c_str());
 			}
-			puts("");
-		}
-		else {
-			for (size_t i = 0; i < dirents.size(); i++) {
-				if (dirents[i].msdos.is_dir > 1)
-					continue;
+			else {
 				printf("%s % 9u %s %s\n",
-					dirents[i].msdos.file_desc,
+					dirents[i].file_desc,
 					dirents[i].msdos.fileSize,
-				 	&(dirents[i].msdos.datetime_str[1]), // no idea, but buffer mysteriously puts null term. as first char, this is a work-around fix. (#L143)
-					u16bytestostr(dirents[i].lfn.name).c_str());
-
-				// for debugging - datetime-str
-				// for (int j = 0; j < sizeof(dirents[i].msdos.datetime_str); j++)
-				// 	printf("%u ", dirents[i].msdos.datetime_str[j]);
-				// puts("");
-
+				 	&(dirents[i].datetime_str[1]), // no idea, but buffer mysteriously puts null term. as first char, this is a work-around fix. (#L143)
+					u16bytestostr(dirents[i].name).c_str()
+				);
 			}
 		}
+
+		if (!verbose)
+			puts("");
 
 		if (this->fat_table[p.cluster] == FAT_ENTRY_EOC or this->fat_table[p.cluster] == FAT_ENTRY_BAD)
 			break;
@@ -132,8 +127,6 @@ void Fat32Image::touch(fs::path path) {
 	if (filename.size() > 11)
 		strtou16bytes(filename.substr(11), fat_entry.lfn.name3, 2);
 
-
-
 	write_fat_entry(cur_offset, fat_entry);
 }
 
@@ -141,7 +134,6 @@ void Fat32Image::touch(fs::path path) {
 // Private members
 
 path_t Fat32Image::locate(fs::path path) {
-	// ** incorrectly locates path -> folder2/folder2/folder3
 	std::vector<std::string> spath = tokenizeStringPath(path);
 	path_t current_path = this->cwd;
 
@@ -168,19 +160,13 @@ path_t Fat32Image::locate(fs::path path) {
 		dirents = this->get_dir_entries(current_path.cluster);
 		current_path.exists = false;
 		for (size_t j = 0; j < dirents.size(); j++) {
-			// printf(
-			// 	"path: %s | is_dir: %hu | seq-no: %x\n",
-			// 	u16bytestostr(dirents[j].lfn.name).c_str(),
-			// 	dirents[j].msdos.is_dir,
-			// 	dirents[j].lfn.name1[0]
-			// );
-			if (u16bytestostr(dirents[j].lfn.name) != spath[i]) // not found
+			if (u16bytestostr(dirents[j].name) != spath[i]) // not found
 				continue; 
 			current_path.exists = true;
 			current_path.path /= spath[i];
 			current_path.pclusters.push_back(current_path.cluster);
 			current_path.cluster = (dirents[j].msdos.eaIndex << 16) | dirents[j].msdos.firstCluster;
-			current_path.is_dir = dirents[j].msdos.is_dir;
+			current_path.is_dir = dirents[j].is_dir;
 			if (i++ == spath.size() - 1) { // last entry
 				return current_path;
 			}
@@ -203,15 +189,18 @@ std::vector<FatFileEntry> Fat32Image::get_dir_entries(int cluster_id) {
 	if (cluster_id < 2)
 		return entries;
 	int fd = open(this->image_file.c_str(), O_RDONLY);
-	uint8_t is_allocated = 1;
 	off_t cur_offset = this->cluster2byte(cluster_id);
-	while (is_allocated) {
-		entries.emplace_back(read_dir_entry(fd, cur_offset));
+	bool stop = false;
+	FatFileEntry fat_entry;
+	while (true) {
+		fat_entry = read_dir_entry(fd, cur_offset);
 		cur_offset = lseek(fd, 0, SEEK_CUR);
-		read(fd, &is_allocated, 1);
-		lseek(fd, cur_offset, SEEK_SET);
+		if (fat_entry.state == 0)	// free/unused
+			break;
+		entries.emplace_back(fat_entry);
 	}
 	close(fd);
+
 	return entries;
 }
 
@@ -220,27 +209,20 @@ void Fat32Image::write_fat_entry(int offset, FatFileEntry fat_entry) {
 	std::ofstream s(this->image_file, std::ios_base::binary | std::ios_base::out | std::ios_base::in);
 	s.seekp(offset, std::ios_base::beg);
 
-	char name1[10];
-	char name2[12];
-	char name3[4];
+	// char name1[10];
+	// char name2[12];
+	// char name3[4];
 
 
-	// lfn 
-	s.write((char*)&fat_entry.lfn.sequence_number, 1);
-	s.write(name1, 10);
-	s.write((char*)&fat_entry.lfn.attributes, 1);
-	s.write((char*)&fat_entry.lfn.reserved, 1);
-	s.write((char*)&fat_entry.lfn.checksum, 1);
-	s.write(name2, 12);
-	s.write((char*)&fat_entry.lfn.firstCluster, 2);
-	s.write(name3, 4);
-	
-	// msdos
+	// // lfn 
+	// s.write((char*)&fat_entry.lfn, 32);	
+	// // msdos
+	// s.write((char*)&fat_entry.msdos, 32);
 }
 
 
 std::string Fat32Image::get_cluster(int cluster_id) {
-	char buffer[this->bytes_per_cluster+1];
+	char buffer[this->bytes_per_cluster];
 	int fd = open(this->image_file.c_str(), O_RDONLY);
 	read_data(fd, this->cluster2byte(cluster_id), buffer, this->bytes_per_cluster);
 	// (!) No null termination to allow string concatenation.

@@ -5,7 +5,7 @@
 #include <vector>
 
 
-std::string u16bytestostr(uint16_t *chars);
+std::string u16bytestostr(uint16_t *chars, int start = 1);
 
 void strtou16bytes(std::string str, uint16_t *buffer, int n);
 
