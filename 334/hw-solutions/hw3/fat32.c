@@ -31,7 +31,7 @@ FatFileEntry read_dir_entry(int fd, int offset) {
 		case 0:		//free
 			fat_entry.state = 0;
 			break;
-		case 0xe5:	// erased
+		case FAT_DIRENT_DELETED:	// erased
 			fat_entry.state = 2;	
 			break;
 		default:	// used

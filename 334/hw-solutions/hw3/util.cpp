@@ -69,7 +69,7 @@ uint16_t uformattime(std::tm *datetime, bool time) {
         return (hour << 11) + (minute << 5) + second/2;
     }
     else {
-        uint16_t year = datetime->tm_year;
+        uint16_t year = datetime->tm_year - 1980;
         uint16_t month = datetime->tm_mon;
         uint16_t day = datetime->tm_mday;
         return (year << 9) + (month << 5) + day;   

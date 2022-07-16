@@ -44,16 +44,24 @@ public:
 	// list directory content
 	void list_directory(fs::path path, bool verbose = false);
 
+	// concatante and print file content to stdout 
 	void cat_file(fs::path path);
 
-	void make_directory(fs::path path);
+	// makes a new (empty) directory
+	void make_directory(fs::path path, FatFileEntry *moved_entry = NULL);
 
-	void touch(fs::path path);
+	// makes a new (empty) file
+	void touch(fs::path path, FatFileEntry *moved_entry = NULL);
+
+	// move a directory tree/file from src to dest
+	void move(fs::path src, fs::path dest);
 
 private:
 	path_t locate(fs::path path);
 
-	void make_entry(fs::path path, bool is_dir = false);
+	void make_entry(fs::path path, bool is_dir = false, FatFileEntry *moved_entry = NULL);
+
+	void mark_deleted(unsigned int cluster_id, std::string name, FatFileEntry &fat_entry);
 
 	// Returns directory entries from cluster content.
 	std::vector<FatFileEntry> get_dir_entries(int cluster_id);

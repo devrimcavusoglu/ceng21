@@ -64,14 +64,19 @@ int main(int argc, char **argv) {
 					fat32img.cat_file(arg1);
 				break;
 			
-			case input_type::TOUCH:
+			case input_type::TOUCH: 	// Create file
 				if (arg1 != "")
 					fat32img.touch(arg1);
 				break;
 
-			case input_type::MKDIR:
+			case input_type::MKDIR:		// Create directory
 				if (arg1 != "")
 					fat32img.make_directory(arg1);
+				break;
+
+			case input_type::MV:		// move file/folder to a folder
+				if (arg1 != "" and arg1 != "")
+					fat32img.move(arg1, arg2);
 				break;
 		}
 	}
