@@ -206,18 +206,22 @@ std::vector<FatFileEntry> Fat32Image::get_dir_entries(int cluster_id) {
 
 
 void Fat32Image::write_fat_entry(int offset, FatFileEntry fat_entry) {
-	std::ofstream s(this->image_file, std::ios_base::binary | std::ios_base::out | std::ios_base::in);
-	s.seekp(offset, std::ios_base::beg);
-
-	// char name1[10];
-	// char name2[12];
-	// char name3[4];
+	std::ofstream out_s(this->image_file, std::ios_base::binary | std::ios_base::out | std::ios_base::in);
+	out_s.seekp(offset, std::ios_base::beg);
 
 
-	// // lfn 
-	// s.write((char*)&fat_entry.lfn, 32);	
-	// // msdos
-	// s.write((char*)&fat_entry.msdos, 32);
+	// lfn 
+	out_s.write((char*)&fat_entry.lfn.sequence_number, 1);
+	out_s.write((char*)fat_entry.lfn.name1, 10);
+	out_s.write((char*)&fat_entry.lfn.attributes, 1);
+	out_s.write((char*)&fat_entry.lfn.reserved, 1);
+	out_s.write((char*)&fat_entry.lfn.checksum, 1);
+	out_s.write((char*)fat_entry.lfn.name2, 12);
+	out_s.write((char*)&fat_entry.lfn.firstCluster, 2);
+	out_s.write((char*)fat_entry.lfn.name3, 4);
+
+
+	out_s.close();
 }
 
 
@@ -225,9 +229,9 @@ std::string Fat32Image::get_cluster(int cluster_id) {
 	char buffer[this->bytes_per_cluster];
 	int fd = open(this->image_file.c_str(), O_RDONLY);
 	read_data(fd, this->cluster2byte(cluster_id), buffer, this->bytes_per_cluster);
-	// (!) No null termination to allow string concatenation.
 	close(fd);
 	std::string content = buffer;
+	content = content.substr(0, this->bytes_per_cluster);
 	return content;
 }
 
