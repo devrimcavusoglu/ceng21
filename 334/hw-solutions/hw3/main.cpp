@@ -68,6 +68,11 @@ int main(int argc, char **argv) {
 				if (arg1 != "")
 					fat32img.touch(arg1);
 				break;
+
+			case input_type::MKDIR:
+				if (arg1 != "")
+					fat32img.make_directory(arg1);
+				break;
 		}
 	}
 }

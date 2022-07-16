@@ -53,3 +53,25 @@ std::vector<std::string> tokenizeStringPath(std::string p) {
 
     return v;
 }
+
+
+std::tm *get_time() {
+    std::time_t t = std::time(0);   // get time now
+    std::tm* now = std::localtime(&t);
+    return now;
+}
+
+uint16_t uformattime(std::tm *datetime, bool time) {
+    if (time) {
+        uint16_t hour = datetime->tm_hour;
+        uint16_t minute = datetime->tm_min;
+        uint16_t second = datetime->tm_sec;
+        return (hour << 11) + (minute << 5) + second/2;
+    }
+    else {
+        uint16_t year = datetime->tm_year;
+        uint16_t month = datetime->tm_mon;
+        uint16_t day = datetime->tm_mday;
+        return (year << 9) + (month << 5) + day;   
+    }
+}

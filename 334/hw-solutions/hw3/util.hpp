@@ -1,3 +1,4 @@
+#include <ctime>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -11,6 +12,9 @@ void strtou16bytes(std::string str, uint16_t *buffer, int n);
 
 void correct_u16bytes(const char *src, char *dest);
 
+std::tm *get_time();
+
+uint16_t uformattime(std::tm *datetime, bool time = false);
 
 /**
  * Converts the path 'p' into tokenized set of strings. p needs to be a path string, e.g. "/home/a/b/c.txt".

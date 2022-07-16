@@ -102,40 +102,40 @@ void u16strdatetime(uint16_t date, uint16_t time, char *buffer) {
 
 void get_month(uint8_t month, char *buffer) {
     switch(month) {
-        case 1:
+        case 0:
             strcpy(buffer, " Jan");
             break;
-        case 2:
+        case 1:
             strcpy(buffer, " Feb");
             break;
-        case 3:
+        case 2:
             strcpy(buffer, " Mar");
             break;
-        case 4:
+        case 3:
             strcpy(buffer, " Apr");
             break;
-        case 5:
+        case 4:
             strcpy(buffer, " May");
             break;
-        case 6:
+        case 5:
             strcpy(buffer, " Jun");
             break;
-        case 7:
+        case 6:
             strcpy(buffer, " Jul");
             break;
-        case 8:
+        case 7:
             strcpy(buffer, " Aug");
             break;
-        case 9:
+        case 8:
             strcpy(buffer, " Sep");
             break;
-        case 10:
+        case 9:
             strcpy(buffer, " Oct");
             break;
-        case 11:
+        case 10:
             strcpy(buffer, " Nov");
             break;
-        case 12:
+        case 11:
             strcpy(buffer, " Dec");
             break;
     }

@@ -20,9 +20,10 @@ Fat32Image::Fat32Image(char *path) {
 	this->root.exists = true;
 	this->cwd = this->root; // set CWD as root
 
-	uint32_t fat_table_temp[sector2byte(BPB.extended.FATSize)/4];
+	uint32_t table_size = sector2byte(BPB.extended.FATSize)/4;
+	uint32_t fat_table_temp[table_size];
 	read_fat_table(fd, fat_entry_offset, fat_entry_offset + sector2byte(BPB.extended.FATSize), fat_table_temp);
-	this->fat_table = fat_table_temp;
+	this->fat_table.insert(this->fat_table.begin(), fat_table_temp, fat_table_temp+table_size);
 	close(fd);
 }
 
@@ -89,7 +90,17 @@ void Fat32Image::cat_file(fs::path path) {
 }
 
 
+void Fat32Image::make_directory(fs::path path) {
+	this->make_entry(path, true);
+}
+
+
 void Fat32Image::touch(fs::path path) {
+	this->make_entry(path);
+
+}
+
+void Fat32Image::make_entry(fs::path path, bool is_dir) {
 	std::string filename = path.filename();
 	if (path.has_parent_path())
 		path = path.parent_path();
@@ -101,7 +112,7 @@ void Fat32Image::touch(fs::path path) {
 		return;
 
 	uint32_t cluster_id = p.cluster;
-	FatFileEntry fat_entry;
+	
 	std::vector<FatFileEntry> dirents = this->get_dir_entries(cluster_id);
 	uint32_t cur_offset = cluster2byte(cluster_id) + dirents.size() * 64;
 	while (true) {
@@ -116,6 +127,7 @@ void Fat32Image::touch(fs::path path) {
 		break;		
 	}
 	
+	FatFileEntry fat_entry;
 	fat_entry.lfn.sequence_number = 0x41;
 	strtou16bytes(filename, fat_entry.lfn.name1, 5);
 	fat_entry.lfn.attributes = 0x0f;
@@ -127,7 +139,47 @@ void Fat32Image::touch(fs::path path) {
 	if (filename.size() > 11)
 		strtou16bytes(filename.substr(11), fat_entry.lfn.name3, 2);
 
+	// filname -> increment (unique ids) 
+	// Filename contains only digits (ASCII) in real FAT32, e.g after 0x39, the 
+	// next id is 0x31 0x30 (current is 0x3a) for ASCII "~10", but current 
+	// solution assures uniqueness, so I will not change for now, but I'll if I have time.
+	fat_entry.msdos.filename[0] = FAT_DIRENT_TILDA;
+	fat_entry.msdos.filename[1] = FAT_DIRENT_SHORTNAME_START + (dirents.size());
+	for (int i = 2; i<sizeof(fat_entry.msdos.filename); i++)
+		fat_entry.msdos.filename[i] = FAT_DIRENT_SHORTNAME_PAD;
+
+	// extension pad only
+	for (int i = 2; i<sizeof(fat_entry.msdos.extension); i++)
+		fat_entry.msdos.extension[i] = FAT_DIRENT_SHORTNAME_PAD;
+
+	if (is_dir)
+		fat_entry.msdos.attributes = 0x10;
+	else
+		fat_entry.msdos.attributes = 0x20;
+	fat_entry.msdos.reserved = 0;
+
+	fat_entry.msdos.creationTimeMs = 0; // no ms precision for now
+
+	std::tm *now = get_time();
+	fat_entry.msdos.creationTime = uformattime(now, true);
+	fat_entry.msdos.creationDate = uformattime(now);
+
+	fat_entry.msdos.lastAccessTime = fat_entry.msdos.creationTime;
+
+	fat_entry.msdos.modifiedTime = fat_entry.msdos.creationTime;
+	fat_entry.msdos.modifiedDate = fat_entry.msdos.creationDate;
+
+	uint32_t entry_id = this->next_free_cluster();
+	fat_entry.msdos.eaIndex = (entry_id & FAT_DIRENT_EAINDEX_MASK) << 16;
+	fat_entry.msdos.firstCluster = entry_id & FAT_DIRENT_FIRSTCLUSTER_MASK;
+
+	fat_entry.msdos.fileSize = 0;
+
+	// Write the entry on cluster
 	write_fat_entry(cur_offset, fat_entry);
+
+	// update the FAT table on memory & disk
+	this->update_fat_table(entry_id, FAT_ENTRY_EOC);
 }
 
 
@@ -221,7 +273,36 @@ void Fat32Image::write_fat_entry(int offset, FatFileEntry fat_entry) {
 	out_s.write((char*)fat_entry.lfn.name3, 4);
 
 
+	// msdos
+	out_s.write((char*)fat_entry.msdos.filename, 8);
+	out_s.write((char*)fat_entry.msdos.extension, 3);
+	out_s.write((char*)&fat_entry.msdos.attributes, 1);
+	out_s.write((char*)&fat_entry.msdos.reserved, 1);
+	out_s.write((char*)&fat_entry.msdos.creationTimeMs, 1);
+	out_s.write((char*)&fat_entry.msdos.creationTime, 2);
+	out_s.write((char*)&fat_entry.msdos.creationDate, 2);
+	out_s.write((char*)&fat_entry.msdos.lastAccessTime, 2);
+	out_s.write((char*)&fat_entry.msdos.eaIndex, 2);
+	out_s.write((char*)&fat_entry.msdos.modifiedTime, 2);
+	out_s.write((char*)&fat_entry.msdos.modifiedDate, 2);
+	out_s.write((char*)&fat_entry.msdos.firstCluster, 2);
+	out_s.write((char*)&fat_entry.msdos.fileSize, 4);
+
 	out_s.close();
+}
+
+
+void Fat32Image::update_fat_table(uint32_t entry_id, uint32_t value) {
+	// Update on memory
+	this->fat_table[entry_id] = value;
+
+	// Update on disk
+	std::ofstream out_s(this->image_file, std::ios_base::binary | std::ios_base::out | std::ios_base::in);
+	
+	uint32_t entry_offset = this->fat_entry_offset + entry_id * 4;
+	out_s.seekp(entry_offset, std::ios_base::beg);
+
+	out_s.write((char*)&value, 4);
 }
 
 
@@ -236,16 +317,16 @@ std::string Fat32Image::get_cluster(int cluster_id) {
 }
 
 uint32_t Fat32Image::next_free_cluster() {
-	for (size_t i = 2; i < sizeof(this->fat_table); i++) {
+	for (uint32_t i = 2; i < this->fat_table.size(); i++) {
 		if (this->fat_table[i] == 0)
-			return this->fat_table[i];
+			return i;
 	}
 }
 
-int Fat32Image::cluster2byte(int cluster_id) {
+unsigned int Fat32Image::cluster2byte(unsigned int cluster_id) {
 	return this->data_area_start + (cluster_id - 2) * sector2byte(this->BPB.SectorsPerCluster);
 }
 
-int Fat32Image::sector2byte(int sector_id) {
+unsigned int Fat32Image::sector2byte(unsigned int sector_id) {
 	return sector_id * this->BPB.BytesPerSector;
 }
