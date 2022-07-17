@@ -72,8 +72,17 @@ FatFileEntry read_dir_entry(int fd, int offset) {
 	return fat_entry;
 }
 
-void get_dot_entry(FatFileEntry &dot_entry) {
-	// TO BE COMPLETED
+void fill_dot_entry(FatFileEntry &dot_entry) {
+	dot_entry.msdos.filename[0] = FAT_DIRENT_DOT;
+	for (int i = 1; i < sizeof(dot_entry.msdos.filename); i++) 
+		dot_entry.msdos.filename[i] = FAT_DIRENT_SHORTNAME_PAD;
+
+	for (int i = 0; i < sizeof(dot_entry.msdos.extension); i++) 
+		dot_entry.msdos.extension[i] = FAT_DIRENT_SHORTNAME_PAD;
+
+	dot_entry.msdos.attributes = FAT_DIRENT_ISDIR;
+	dot_entry.msdos.reserved = 0;
+	dot_entry.msdos.fileSize = 0;
 }
 
 

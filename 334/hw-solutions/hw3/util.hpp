@@ -1,4 +1,5 @@
 #include <ctime>
+#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,6 +16,8 @@ void correct_u16bytes(const char *src, char *dest);
 std::tm *get_time();
 
 uint16_t uformattime(std::tm *datetime, bool time = false);
+
+void fix_filename_digits(unsigned char *filename, unsigned int offset);
 
 /**
  * Converts the path 'p' into tokenized set of strings. p needs to be a path string, e.g. "/home/a/b/c.txt".

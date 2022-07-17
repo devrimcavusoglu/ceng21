@@ -79,7 +79,9 @@ private:
 
 	unsigned int cluster2byte(unsigned int cluster_id);
 
-	void write_fat_entry(int offset, FatFileEntry fat_entry);
+	void write_fat_entry(int offset, FatFileEntry fat_entry, bool msdos_only = false);
+
+	void write_dot_entry(int offset, FatFile83 dot_entry);
 
 	void update_fat_table(uint32_t entry_id, uint32_t value);
 

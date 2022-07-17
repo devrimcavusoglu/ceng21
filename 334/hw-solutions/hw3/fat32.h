@@ -23,6 +23,7 @@
 #define FAT_DIRENT_ISDIR 0x10
 #define FAT_DIRENT_DOT 0x2e
 #define FAT_DIRENT_TILDE 0x7e
+#define FAT_DIRENT_SHORTNAME_OFFSET 0x30
 #define FAT_DIRENT_SHORTNAME_START 0x31
 #define FAT_DIRENT_SHORTNAME_PAD 0x20
 #define FAT_DIRENT_EAINDEX_MASK 0xffff0000
@@ -121,7 +122,7 @@ void read_fat_table(int fd, int start, int end, uint32_t *fat_table);
 
 void u16strdatetime(uint16_t date, uint16_t time, char *buffer);
 
-void get_dot_entry(FatFileEntry &dot_entry);
+void fill_dot_entry(FatFileEntry &dot_entry);
 
 void get_month(uint8_t month, char *buffer);
 

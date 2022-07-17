@@ -75,3 +75,26 @@ uint16_t uformattime(std::tm *datetime, bool time) {
         return (year << 9) + (month << 5) + day;   
     }
 }
+
+
+void fix_filename_digits(unsigned char *filename, unsigned int offset) { 
+    filename[0] = FAT_DIRENT_TILDE;
+    int name_id = FAT_DIRENT_SHORTNAME_START + (offset/64);
+    int pad_start = 2;
+
+    if (name_id >= 0x3a) {
+        name_id = name_id - FAT_DIRENT_SHORTNAME_OFFSET;
+        uint8_t first_digit, second_digit;
+        first_digit = floor(name_id / 10);
+        second_digit = name_id % 10;
+
+        filename[1] = FAT_DIRENT_SHORTNAME_OFFSET + first_digit;
+        filename[2] = FAT_DIRENT_SHORTNAME_OFFSET + second_digit;
+        pad_start = 3;
+    } 
+    else {
+        filename[1] = name_id;
+    }
+    for (int i = pad_start; i<sizeof(filename); i++)
+            filename[i] = FAT_DIRENT_SHORTNAME_PAD;
+}

@@ -91,11 +91,17 @@ void Fat32Image::cat_file(fs::path path) {
 
 
 void Fat32Image::make_directory(fs::path path, FatFileEntry *moved_entry) {
+	path_t p = this->locate(path);
+	if (p.exists)
+		return;
 	this->make_entry(path, true, moved_entry);
 }
 
 
 void Fat32Image::touch(fs::path path, FatFileEntry *moved_entry) {
+	path_t p = this->locate(path);
+	if (p.exists)
+		return;
 	this->make_entry(path, false, moved_entry);
 }
 
@@ -199,26 +205,27 @@ void Fat32Image::make_entry(fs::path path, bool is_dir, FatFileEntry *moved_entr
 		return;
 
 	off_t cur_offset;
+	uint32_t cluster_id = p.cluster;
 	int free_entry_offset;
 	bool allocate_new = false;
 	while (true) {
-		free_entry_offset = this->cluster_has_space(p.cluster);
+		free_entry_offset = this->cluster_has_space(cluster_id);
 		if (free_entry_offset == -1) {
-			if (this->fat_table[p.cluster] == FAT_ENTRY_EOC) {
+			if (this->fat_table[cluster_id] == FAT_ENTRY_EOC) {
 				allocate_new = true;
 				break;
 			}
-			p.cluster = this->fat_table[p.cluster];
+			cluster_id = this->fat_table[cluster_id];
 			continue;
 		}
-		cur_offset = cluster2byte(p.cluster) + free_entry_offset;
+		cur_offset = cluster2byte(cluster_id) + free_entry_offset;
 		break;
 	}
 
 	// If cluster capacity is full, allocate a new cluster
 	if (allocate_new) {	
 		uint32_t free_cluster_id = this->next_free_cluster();
-		this->update_fat_table(p.cluster, free_cluster_id);
+		this->update_fat_table(cluster_id, free_cluster_id);
 		this->update_fat_table(free_cluster_id, FAT_ENTRY_EOC);
 		cur_offset = cluster2byte(free_cluster_id);
 	}
@@ -237,11 +244,13 @@ void Fat32Image::make_entry(fs::path path, bool is_dir, FatFileEntry *moved_entr
 		// Filename contains only digits (ASCII) in real FAT32, e.g after 0x39, the 
 		// next id is 0x31 0x30 for ASCII "~10", but current (current is 0x3a)
 		// solution assures uniqueness, so I will not change for now, but I'll if I have time.
-		fat_entry.msdos.filename[0] = FAT_DIRENT_TILDE;
-		fat_entry.msdos.filename[1] = FAT_DIRENT_SHORTNAME_START + (free_entry_offset/64);
-		for (int i = 2; i<sizeof(fat_entry.msdos.filename); i++)
-			fat_entry.msdos.filename[i] = FAT_DIRENT_SHORTNAME_PAD;
+		// fat_entry.msdos.filename[0] = FAT_DIRENT_TILDE;
+		// fat_entry.msdos.filename[1] = FAT_DIRENT_SHORTNAME_START + (free_entry_offset/64);
+		// for (int i = 2; i<sizeof(fat_entry.msdos.filename); i++)
+		// 	fat_entry.msdos.filename[i] = FAT_DIRENT_SHORTNAME_PAD;
 
+
+		fix_filename_digits(fat_entry.msdos.filename, free_entry_offset);
 		fat_entry.lfn.sequence_number = 0x41;
 		strtou16bytes(filename, fat_entry.lfn.name1, 5);
 		fat_entry.lfn.attributes = 0x0f;
@@ -283,7 +292,39 @@ void Fat32Image::make_entry(fs::path path, bool is_dir, FatFileEntry *moved_entr
 
 		// update the FAT table on memory & disk
 		this->update_fat_table(entry_id, FAT_ENTRY_EOC);
+
+		if (is_dir) {
+			FatFileEntry dot_entry;	// curent dir
+			FatFileEntry dotdot_entry;	// parent dir
+
+			fill_dot_entry(dot_entry);
+			fill_dot_entry(dotdot_entry);
+
+			dotdot_entry.msdos.filename[1] = FAT_DIRENT_DOT;
+
+			dot_entry.msdos.creationTime = fat_entry.msdos.creationTime;
+			dot_entry.msdos.creationDate = fat_entry.msdos.creationDate;
+			dot_entry.msdos.lastAccessTime = fat_entry.msdos.creationDate;
+			dot_entry.msdos.modifiedTime = fat_entry.msdos.creationTime;
+			dot_entry.msdos.modifiedDate = fat_entry.msdos.creationDate;
+			dot_entry.msdos.eaIndex = fat_entry.msdos.eaIndex;
+			dot_entry.msdos.firstCluster = fat_entry.msdos.firstCluster;
+
+
+			dotdot_entry.msdos.creationTime = fat_entry.msdos.creationTime;
+			dotdot_entry.msdos.creationDate = fat_entry.msdos.creationDate;
+			dotdot_entry.msdos.lastAccessTime = fat_entry.msdos.creationDate;
+			dotdot_entry.msdos.modifiedTime = fat_entry.msdos.creationTime;
+			dotdot_entry.msdos.modifiedDate = fat_entry.msdos.creationDate;
+			dotdot_entry.msdos.eaIndex = (p.cluster & FAT_DIRENT_EAINDEX_MASK) >> 16;
+			dotdot_entry.msdos.firstCluster = p.cluster & FAT_DIRENT_FIRSTCLUSTER_MASK;
+
+			write_fat_entry(cluster2byte(entry_id), dot_entry, true);
+			write_fat_entry(cluster2byte(entry_id) + 32, dotdot_entry, true);
+		}
 	}
+
+	printf("Current offset -> 0x%x | Cluster -> %u\n", cur_offset, cluster_id);
 
 	// Write the entry on cluster
 	write_fat_entry(cur_offset, fat_entry);
@@ -328,21 +369,22 @@ std::vector<FatFileEntry> Fat32Image::get_dir_entries(int cluster_id) {
 }
 
 
-void Fat32Image::write_fat_entry(int offset, FatFileEntry fat_entry) {
+void Fat32Image::write_fat_entry(int offset, FatFileEntry fat_entry, bool msdos_only) {
 	std::ofstream out_s(this->image_file, std::ios_base::binary | std::ios_base::out | std::ios_base::in);
 	out_s.seekp(offset, std::ios_base::beg);
 
 
-	// lfn 
-	out_s.write((char*)&fat_entry.lfn.sequence_number, 1);
-	out_s.write((char*)fat_entry.lfn.name1, 10);
-	out_s.write((char*)&fat_entry.lfn.attributes, 1);
-	out_s.write((char*)&fat_entry.lfn.reserved, 1);
-	out_s.write((char*)&fat_entry.lfn.checksum, 1);
-	out_s.write((char*)fat_entry.lfn.name2, 12);
-	out_s.write((char*)&fat_entry.lfn.firstCluster, 2);
-	out_s.write((char*)fat_entry.lfn.name3, 4);
-
+	if (!msdos_only) {
+		// lfn 
+		out_s.write((char*)&fat_entry.lfn.sequence_number, 1);
+		out_s.write((char*)fat_entry.lfn.name1, 10);
+		out_s.write((char*)&fat_entry.lfn.attributes, 1);
+		out_s.write((char*)&fat_entry.lfn.reserved, 1);
+		out_s.write((char*)&fat_entry.lfn.checksum, 1);
+		out_s.write((char*)fat_entry.lfn.name2, 12);
+		out_s.write((char*)&fat_entry.lfn.firstCluster, 2);
+		out_s.write((char*)fat_entry.lfn.name3, 4);
+	}
 
 	// msdos
 	out_s.write((char*)fat_entry.msdos.filename, 8);
