@@ -31,16 +31,16 @@ int main(int argc, char **argv) {
 			system("clear");
 			continue;
 		}
-		else if (input == "quit") {
-			delete p;
-			exit(0);
-		}
-
+		
 		parse(p, input.data());
 		std::string arg1 = (p->arg1) ? p->arg1 : "";
 		std::string arg2 = (p->arg2) ? p->arg2 : "";
 
 		switch(p->type) {
+			case input_type::QUIT:  // Quit
+				delete p;
+				exit(0);
+				break;
 			case input_type::CD:	// Change directory
 				if (arg1 != "")
 					fat32img.change_directory(arg1);
@@ -64,9 +64,19 @@ int main(int argc, char **argv) {
 					fat32img.cat_file(arg1);
 				break;
 			
-			case input_type::TOUCH:
+			case input_type::TOUCH: 	// Create file
 				if (arg1 != "")
 					fat32img.touch(arg1);
+				break;
+
+			case input_type::MKDIR:		// Create directory
+				if (arg1 != "")
+					fat32img.make_directory(arg1);
+				break;
+
+			case input_type::MV:		// move file/folder to a folder
+				if (arg1 != "" and arg1 != "")
+					fat32img.move(arg1, arg2);
 				break;
 		}
 	}
