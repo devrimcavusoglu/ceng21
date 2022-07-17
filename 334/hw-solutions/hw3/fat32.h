@@ -121,6 +121,8 @@ void read_fat_table(int fd, int start, int end, uint32_t *fat_table);
 
 void u16strdatetime(uint16_t date, uint16_t time, char *buffer);
 
+void get_dot_entry(FatFileEntry &dot_entry);
+
 void get_month(uint8_t month, char *buffer);
 
 uint32_t read_fat_entry(int fd, int offset);

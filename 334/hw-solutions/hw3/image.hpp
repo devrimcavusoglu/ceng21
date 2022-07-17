@@ -59,6 +59,8 @@ public:
 private:
 	path_t locate(fs::path path);
 
+	int cluster_has_space(unsigned int cluster_id);
+
 	void make_entry(fs::path path, bool is_dir = false, FatFileEntry *moved_entry = NULL);
 
 	void mark_deleted(unsigned int cluster_id, std::string name, FatFileEntry &fat_entry);

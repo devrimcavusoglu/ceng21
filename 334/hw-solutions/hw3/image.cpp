@@ -115,7 +115,7 @@ void Fat32Image::move(fs::path src, fs::path dest) {
 		return;
 
 	FatFileEntry src_entry;
-	// mark src as deleted
+	// mark src as deleted and copy entry to be deleted to src_entry
 	this->mark_deleted(p_src.pclusters.back(), p_src.path.filename(), src_entry);
 
 	// make entry on dest
@@ -179,31 +179,48 @@ path_t Fat32Image::locate(fs::path path) {
 }
 
 
+int Fat32Image::cluster_has_space(unsigned int cluster_id) {
+	std::vector<FatFileEntry> dirents = this->get_dir_entries(cluster_id);
+	if (this->bytes_per_cluster - dirents.size()*64 >= 64)
+		return dirents.size()*64;
+	return -1;
+}
+
+
 void Fat32Image::make_entry(fs::path path, bool is_dir, FatFileEntry *moved_entry) {
 	std::string filename = path.filename();
 	if (path.has_parent_path())
 		path = path.parent_path();
 	else
-		path = "/";
+		path = this->cwd.path;
 
 	path_t p = this->locate(path);
 	if (!p.exists or !p.is_dir)  // Sanity check
 		return;
 
-	uint32_t cluster_id = p.cluster;
-	
-	std::vector<FatFileEntry> dirents = this->get_dir_entries(cluster_id);
-	uint32_t cur_offset = cluster2byte(cluster_id) + dirents.size() * 64;
+	off_t cur_offset;
+	int free_entry_offset;
+	bool allocate_new = false;
 	while (true) {
-		if (dirents.size()*64 > (this->bytes_per_cluster - 64)) {
-			cluster_id = this->fat_table[cluster_id];
-			if (cluster_id == FAT_ENTRY_EOC or cluster_id == FAT_ENTRY_BAD)
-				return;
-			dirents = this->get_dir_entries(cluster_id);
-			cur_offset = cluster2byte(cluster_id) + dirents.size() * 64;
+		free_entry_offset = this->cluster_has_space(p.cluster);
+		if (free_entry_offset == -1) {
+			if (this->fat_table[p.cluster] == FAT_ENTRY_EOC) {
+				allocate_new = true;
+				break;
+			}
+			p.cluster = this->fat_table[p.cluster];
 			continue;
 		}
-		break;		
+		cur_offset = cluster2byte(p.cluster) + free_entry_offset;
+		break;
+	}
+
+	// If cluster capacity is full, allocate a new cluster
+	if (allocate_new) {	
+		uint32_t free_cluster_id = this->next_free_cluster();
+		this->update_fat_table(p.cluster, free_cluster_id);
+		this->update_fat_table(free_cluster_id, FAT_ENTRY_EOC);
+		cur_offset = cluster2byte(free_cluster_id);
 	}
 
 	FatFileEntry fat_entry;
@@ -215,25 +232,27 @@ void Fat32Image::make_entry(fs::path path, bool is_dir, FatFileEntry *moved_entr
 		fat_entry.msdos.lastAccessTime = uformattime(now, true);
 	}
 	else {
-		fat_entry.lfn.sequence_number = 0x41;
-		strtou16bytes(filename, fat_entry.lfn.name1, 5);
-		fat_entry.lfn.attributes = 0x0f;
-		fat_entry.lfn.reserved = 0x00;
-		fat_entry.lfn.checksum = cksum((unsigned char*)filename.c_str());
-		if (filename.size() > 5)
-			strtou16bytes(filename.substr(5), fat_entry.lfn.name2, 6);
-		fat_entry.lfn.firstCluster = 0x0000;
-		if (filename.size() > 11)
-			strtou16bytes(filename.substr(11), fat_entry.lfn.name3, 2);
 
 		// filname -> increment (unique ids) 
 		// Filename contains only digits (ASCII) in real FAT32, e.g after 0x39, the 
 		// next id is 0x31 0x30 for ASCII "~10", but current (current is 0x3a)
 		// solution assures uniqueness, so I will not change for now, but I'll if I have time.
 		fat_entry.msdos.filename[0] = FAT_DIRENT_TILDE;
-		fat_entry.msdos.filename[1] = FAT_DIRENT_SHORTNAME_START + (dirents.size());
+		fat_entry.msdos.filename[1] = FAT_DIRENT_SHORTNAME_START + (free_entry_offset/64);
 		for (int i = 2; i<sizeof(fat_entry.msdos.filename); i++)
 			fat_entry.msdos.filename[i] = FAT_DIRENT_SHORTNAME_PAD;
+
+		fat_entry.lfn.sequence_number = 0x41;
+		strtou16bytes(filename, fat_entry.lfn.name1, 5);
+		fat_entry.lfn.attributes = 0x0f;
+		fat_entry.lfn.reserved = 0x00;
+		fat_entry.lfn.checksum = cksum((unsigned char*)fat_entry.msdos.filename);
+		if (filename.size() > 5)
+			strtou16bytes(filename.substr(5), fat_entry.lfn.name2, 6);
+		fat_entry.lfn.firstCluster = 0x0000;
+		if (filename.size() > 11)
+			strtou16bytes(filename.substr(11), fat_entry.lfn.name3, 2);
+
 
 		// extension pad only
 		for (int i = 2; i<sizeof(fat_entry.msdos.extension); i++)
@@ -298,7 +317,8 @@ std::vector<FatFileEntry> Fat32Image::get_dir_entries(int cluster_id) {
 	while (true) {
 		fat_entry = read_dir_entry(fd, cur_offset);
 		cur_offset = lseek(fd, 0, SEEK_CUR);
-		if (fat_entry.state == 0)	// free/unused
+		// stop if hit free/unused or hit cluster size
+		if (fat_entry.state == 0 or cur_offset - cluster2byte(cluster_id) > this->bytes_per_cluster)
 			break;
 		entries.emplace_back(fat_entry);
 	}

@@ -72,6 +72,10 @@ FatFileEntry read_dir_entry(int fd, int offset) {
 	return fat_entry;
 }
 
+void get_dot_entry(FatFileEntry &dot_entry) {
+	// TO BE COMPLETED
+}
+
 
 void read_data(int fd, int offset, void *buf, unsigned int size) {
 	lseek(fd, offset, SEEK_SET); // re-position the fd to the offset
